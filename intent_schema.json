@@ -1,0 +1,59 @@
+{
+  "intents": [
+    {
+      "intent": "ListTopics"
+    },
+    {
+      "intent": "ListArticles",
+      "slots": [
+        {
+          "name": "topic",
+          "type": "topic"
+        }
+      ]
+    },
+    {
+      "intent": "ReadArticle",
+      "slots": [
+        {
+          "name": "position",
+          "type": "position"
+        },
+        {
+          "name": "topic",
+          "type": "topic"
+        }
+      ]
+    },
+    {
+      "intent": "ListRelatedArticles"
+    },
+    {
+      "intent": "ReadRelatedArticle",
+      "slots": [
+        {
+          "name": "position",
+          "type": "position"
+        }
+      ]
+    },
+    {
+      "intent": "PreviousArticle"
+    },
+    {
+      "intent": "NextArticle"
+    },
+    {
+      "intent": "PreviousSentence"
+    },
+    {
+      "intent": "AMAZON.YesIntent"
+    },
+    {
+      "intent": "AMAZON.NoIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "alexa-news-reader",
+  "version": "1.0.0",
+  "description": "An alexa skill that reads the news to you",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://ken107@github.com/ken107/alexa-news-reader.git"
+  },
+  "keywords": [
+    "alexa",
+    "skill",
+    "amazon",
+    "echo",
+    "news",
+    "reader",
+    "reading"
+  ],
+  "author": "hai.phan@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ken107/alexa-news-reader/issues"
+  },
+  "homepage": "https://github.com/ken107/alexa-news-reader#readme",
+  "dependencies": {
+    "jquery": "^3.1.1",
+    "jsdom": "^9.8.0"
+  }
+}
