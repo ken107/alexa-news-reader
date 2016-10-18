@@ -8,6 +8,7 @@ ListArticles {topic} news
 ListArticles what are the {topic} news
 ListArticles read {topic} news
 ListArticles read the {topic} news
+ListArticles list articles in {topic}
 ListArticles list articles
 ListArticles list all articles
 ListArticles list all the articles
@@ -27,4 +28,3 @@ ReadRelatedArticle read the {position} related article
 
 PreviousArticle previous article
 NextArticle next article
-PreviousSentence go back

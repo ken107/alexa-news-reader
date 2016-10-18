@@ -50,9 +50,10 @@ exports.handler = function(event, context, callback) {
 var handlers = {};
 var state = {};
 var positions = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth", "twentieth"];
+var topics = ["top stories", "world", "US", "elections", "business", "technology", "entertainment", "sports", "science", "health", "spotlight"];
 
 handlers.Launch = function(launchRequest, session, sendResponse) {
-  getTopics(topics => sendResponse({
+  sendResponse({
     text: "Which topic would you like to read?",
     title: "Welcome",
     reprompt: "To hear the list of topics, say 'list topics'."
@@ -60,21 +61,22 @@ handlers.Launch = function(launchRequest, session, sendResponse) {
 };
 
 handlers.ListTopics = function(intentRequest, session, sendResponse) {
-  getTopics(topics => sendResponse({
-    text: topics.join(),
+  sendResponse({
+    text: topics.join() + "\n\nWhich topic would you like to read?",
     title: "Topics",
     reprompt: "You can say the name of a topic."
-  }));
+  });
 };
 
 handlers.ListArticles = function(intentRequest, session, sendResponse) {
-  getArticles(intentRequest.intent.slots, (topic, articles) => {
+  getTopic(intentRequest.intent.slots.topic, topic => {
     if (topic) {
       sendResponse({
-        text: articles.map((article, index) => `${positions[index]} article.\nFrom ${article.source}.\n${article.title}.\n${article.text}.`).join("\n\n"),
+        text: topic.articles.map((article, index) => `${positions[index]} article.\nFrom ${article.source}.\n${article.title}.\n${article.text}.`).join("\n\n") + "\n\nYou can say 'first article' to read the first article in the topic.",
         title: `In ${topic}`,
-        reprompt: "You can say 'first article' to read the first article in the topic."
+        reprompt: "Which article would you like to read?"
       });
+      state.topic = topic;
     }
     else {
       sendResponse({
@@ -87,13 +89,26 @@ handlers.ListArticles = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ReadArticle = function(intentRequest, session, sendResponse) {
-  getArticle(intentRequest.intent.slots, (topic, article) => {
+  getTopic(intentRequest.intent.slots.topic, topic => {
     if (topic) {
-      sendResponse({
-        text: `Now reading ${article.title}.\n\n${article.text}.\n\nWould you like me to read the next article?`,
-        title: article.title,
-        reprompt: "To hear the next article, say 'next article'."
+      getArticle(topic.articles, intentRequest.intent.slots.position, article => {
+        if (article) {
+          sendResponse({
+            text: `From ${article.source}.\n\n${article.title}.\n\n${article.text}.\n\nWould you like me to read the next article?`,
+            title: article.title,
+            reprompt: "You can also say 'related articles' to list articles related this the one you just heard."
+          });
+          state.yesIntent = "NextArticle";
+        }
+        else {
+          sendResponse({
+            text: "You made an invalid choice. Which article would you like me to read?",
+            title: "Invalid choice",
+            reprompt: "You can say 'read me the first article'."
+          });
+        }
       });
+      state.topic = topic;
     }
     else {
       sendResponse({
@@ -106,49 +121,120 @@ handlers.ReadArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ListRelatedArticles = function(intentRequest, session, sendResponse) {
+  if (state.article) {
+    sendResponse({
+      text: state.article.relatedArticles.map((article, index) => `${positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nYou can say 'read the first related article'.",
+      title: 'Related Articles',
+      reprompt: "Or say 'next article' to go to the next article in the topic."
+    })
+  }
+  else {
+    sendResponse({
+      text: "You have not read any articles. To read an article in a topic, say 'read the first article in Science'.",
+      title: 'No related articles',
+      reprompt: "To list articles in a topic, say 'list articles in Science'."
+    })
+  }
 };
 
 handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
+  if (state.article) {
+    getRelatedArticle(state.article.relatedArticles, intentRequest.intent.slots.position, article => {
+      if (article) {
+        sendResponse({
+          text: `From ${article.source}.\n\n${article.title}.\n\n${article.text}.\n\nWould you like me to read the next related article?`,
+          title: article.title,
+          reprompt: "To go to the next article in the topic, say 'next article'."
+        });
+        state.relatedArticle = article;
+        state.yesIntent = "NextRelatedArticle";
+      }
+      else {
+        sendResponse({
+          text: "You made an invalid choice. Which article would you like me to read?",
+          title: "Invalid choice",
+          reprompt: "You can say 'read me the first related article'."
+        });
+      }
+    });
+  }
+  else {
+    sendResponse({
+      text: "You have not read any articles. To read an article in a topic, say 'read the first article in Science'.",
+      title: 'No related articles',
+      reprompt: "To list articles in a topic, say 'list articles in Science'."
+    })
+  }
 };
 
 handlers.PreviousArticle = function(intentRequest, session, sendResponse) {
+  var index = state.topic.articles.indexOf(state.article) - 1;
+  if (index >= 0) {
+    this.ReadArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
+  }
+  else {
+    sendResponse({
+      text: "You made an invalid choice. Which article would you like me to read?",
+      title: "Invalid choice",
+      reprompt: "You can say 'read me the first article'."
+    });
+  }
 };
 
 handlers.NextArticle = function(intentRequest, session, sendResponse) {
+  var index = state.topic.articles.indexOf(state.article) + 1;
+  if (index < state.topic.articles.length) {
+    this.ReadArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
+  }
+  else {
+    sendResponse({
+      text: "There are no more articles in this topic. You can say 'list topics' to hear other available topics.",
+      title: "No more articles",
+      reprompt: "You can also say 'related articles' to list the articles related to the one you just heard."
+    });
+  }
 };
 
-handlers.PreviousSentence = function(intentRequest, session, sendResponse) {
+handlers.NextRelatedArticle = function(intentRequest, session, sendResponse) {
+  var index = state.article.relatedArticles.indexOf(state.relatedArticle) + 1;
+  if (index < state.article.relatedArticles.length) {
+    this.ReadRelatedArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
+  }
+  else {
+    sendResponse({
+      text: "There are no more related articles. To hear the next article in this topic, say 'next article'.",
+      title: "No more related articles",
+      reprompt: "To list all articles in the topic, say 'list all articles'."
+    });
+  }
+};
+
+handlers.HangOut = function(intentRequest, session, sendResponse)  {
+  var responses = [
+    "Okay, let's hang out together!",
+    "Okay, sounds fun!",
+    "Okay, have fun, I gotta go.",
+    "Okay, fine!"
+  ];
+  sendResponse({
+    text: responses[Math.floor(Math.random()*responses.length)],
+    title: "Hang Out",
+    shouldEndSession: true
+  });
 };
 
 handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
   if (state.yesIntent == "NextArticle") {
-    var nextIndex = state.article.index + 1;
-    if (nextIndex < state.topic.articles.length) {
-      this.ReadArticle(makeIntentRequest({position: {value: positions[nextIndex]}}), session, sendResponse);
-    }
-    else {
-      sendResponse({
-        text: "There are no more articles in this topic. You can say 'list topics' to hear other available topics.",
-        title: "No more articles",
-        reprompt: "You can also say 'related articles' to list the articles related to the one you just heard."
-      });
-    }
+    this.NextArticle(makeIntentRequest(), session, sendResponse);
+  }
+  else if (state.yesIntent == "NextRelatedArticle") {
+    this.NextRelatedArticle(makeIntentRequest(), session, sendResponse);
   }
   else if (state.yesIntent == "TopStories") {
     this.ListArticles(makeIntentRequest({topic: {value: "Top Stories"}}), session, sendResponse);
   }
   else if (state.yesIntent == "HangOut") {
-    var responses = [
-      "Okay, let's hang out together!",
-      "Okay, sounds fun!",
-      "Okay, have fun, I gotta go.",
-      "Okay, fine!"
-    ];
-    sendResponse({
-      text: responses[Math.floor(Math.random()*responses.length)],
-      title: "Hang Out",
-      shouldEndSession: true
-    });
+    this.HangOut(makeIntentRequest(), session, sendResponse);
   }
   else {
     sendResponse({
@@ -196,14 +282,14 @@ function makeIntentRequest(slots, name) {
   };
 }
 
-function getTopics(callback) {
+function getTopic(topic, callback) {
 
 }
 
-function getArticles(slots, callback) {
+function getArticle(articles, position, callback) {
 
 }
 
-function getArticle(slots, callback) {
+function getRelatedArticle(articles, position, callback) {
 
 }
