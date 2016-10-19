@@ -18,6 +18,15 @@ var feeds = {
   "spotlight": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=ir&output=rss",
 };
 
+var $;
+require("jsdom").env("", (err, window) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+  $ = require("jquery")(window);
+});
+
 exports.handler = function(event, context, callback) {
   try {
     var handler;
@@ -262,7 +271,6 @@ handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
 };
 
 handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
-  if (state.yesIntent) {
     if (state.yesIntent != "HangOut") {
       sendResponse({
         text: "So, what do ya want to do? Hang out?",
@@ -278,14 +286,6 @@ handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
         shouldEndSession: true
       });
     }
-  }
-  else {
-    sendResponse({
-      text: "You said no but I haven't asked you any questions. Would you like to see a therapist?",
-      title: "Cuckoo alert",
-      shouldEndSession: true
-    });
-  }
 };
 
 handlers['AMAZON.StopIntent'] =
@@ -334,5 +334,12 @@ function getRelatedArticle(articles, positionSlot, callback) {
 }
 
 function parseFeed(xml) {
-  
+  var doc = $.parseXML(xml);
+  return $(doc).find("channel:first").children("item").map(item => {
+    return {
+      source: ,
+      title: ,
+      text:
+    }
+  });
 }
