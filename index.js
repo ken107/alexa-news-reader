@@ -1,21 +1,24 @@
 'use strict';
 
 var handlers = {};
-var state = {};
+var state = {
+  topics: {}
+};
 var positions = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth", "twentieth"];
+var positions2 = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th"];
 var topics = ["top stories", "world", "US", "elections", "business", "technology", "entertainment", "sports", "science", "health", "spotlight"];
 var feeds = {
-  "top stories": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&output=rss",
-  "world": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=w&output=rss",
-  "US": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=n&output=rss",
-  "elections": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=el&output=rss",
-  "business": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=b&output=rss",
-  "technology": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=tc&output=rss",
-  "entertainment": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=e&output=rss",
-  "sports": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=s&output=rss",
-  "science": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=snc&output=rss",
-  "health": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=m&output=rss",
-  "spotlight": "http://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=ir&output=rss",
+  "top stories": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&output=rss",
+  "world": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=w&output=rss",
+  "US": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=n&output=rss",
+  "elections": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=el&output=rss",
+  "business": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=b&output=rss",
+  "technology": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=tc&output=rss",
+  "entertainment": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=e&output=rss",
+  "sports": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=s&output=rss",
+  "science": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=snc&output=rss",
+  "health": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=m&output=rss",
+  "spotlight": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=ir&output=rss",
 };
 
 var $;
@@ -26,6 +29,9 @@ require("jsdom").env("", (err, window) => {
   }
   $ = require("jquery")(window);
 });
+
+var DOMParser = require("xmldom").DOMParser;
+var domParser = new DOMParser();
 
 exports.handler = function(event, context, callback) {
   try {
@@ -42,7 +48,7 @@ exports.handler = function(event, context, callback) {
         callback();
         break;
     }
-    if (handler) handler(event.request, event.session, sendResponse);
+    if (handler) handler.call(handlers, event.request, event.session, sendResponse);
   }
   catch (err) {
     callback(err);
@@ -68,7 +74,7 @@ exports.handler = function(event, context, callback) {
             text: response.reprompt || "I'm waiting for your response",
           },
         },
-        shouldEndSession: res.shouldEndSession || false,
+        shouldEndSession: response.shouldEndSession || false,
       },
     });
   };
@@ -84,21 +90,21 @@ handlers.Launch = function(launchRequest, session, sendResponse) {
 
 handlers.ListTopics = function(intentRequest, session, sendResponse) {
   sendResponse({
-    text: topics.join() + "\n\nWhich topic would you like to read?",
+    text: topics.join(", ") + "\n\nWhich topic would you like to read?",
     title: "Topics",
     reprompt: "You can say the name of a topic."
   });
 };
 
 handlers.ListArticles = function(intentRequest, session, sendResponse) {
-  getTopic(intentRequest.intent.slots.topic, topic => {
+  getTopic(intentRequest.intent.slots.topic.value, topic => {
     if (topic) {
-      sendResponse({
-        text: topic.articles.map((article, index) => `${positions[index]} article.\nFrom ${article.source}.\n${article.title}.\n${article.text}.`).join("\n\n") + "\n\nYou can say 'first article' to read the first article in the topic.",
-        title: `In ${topic.name}`,
-        reprompt: "Which article would you like to read?"
-      });
       state.topic = topic;
+      sendResponse({
+        text: `In ${topic.name}.\n\n` + topic.articles.map((article, index) => `${positions[index]} article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich article would you like to read?",
+        title: `In ${topic.name}`,
+        reprompt: "You can say 'read the first article'."
+      });
     }
     else {
       sendResponse({
@@ -111,17 +117,24 @@ handlers.ListArticles = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ReadArticle = function(intentRequest, session, sendResponse) {
-  getTopic(intentRequest.intent.slots.topic, topic => {
+  getTopic(intentRequest.intent.slots.topic.value, topic => {
     if (topic) {
-      getArticle(topic.articles, intentRequest.intent.slots.position, article => {
+      state.topic = topic;
+      getArticle(topic.articles, intentRequest.intent.slots.position.value, article => {
         if (article) {
-          sendResponse({
-            text: `From ${article.source}.\n\n${article.title}.\n\n${article.text}.\n\nWould you like me to read the next article?`,
-            title: article.title,
-            reprompt: "You can also say 'related articles' to list articles related to the one you just heard."
-          });
           state.article = article;
-          state.yesIntent = "NextArticle";
+          if (article.texts) {
+            state.articleToRead = article;
+            this.ContinueReading(intentRequest, session, sendResponse);
+          }
+          else {
+            state.yesIntent = "NextRelatedArticle";
+            sendResponse({
+              text: "An error occurred while loading this article, should I read you a related article?",
+              title: "Error loading article",
+              reprompt: "You can also say 'read me the first related article'."
+            });
+          }
         }
         else {
           sendResponse({
@@ -131,7 +144,6 @@ handlers.ReadArticle = function(intentRequest, session, sendResponse) {
           });
         }
       });
-      state.topic = topic;
     }
     else {
       sendResponse({
@@ -143,12 +155,38 @@ handlers.ReadArticle = function(intentRequest, session, sendResponse) {
   });
 };
 
+handlers.ContinueReading = function(intentRequest, session, sendResponse) {
+  var text;
+  if (state.textsToRead && state.textsToRead.length) text = "";
+  else {
+    state.textsToRead = state.articleToRead.texts.slice();
+    text = `From ${state.articleToRead.source}.\n\n${state.articleToRead.title}.\n\n`;
+  }
+  while (state.textsToRead.length && (text.length + state.textsToRead[0].length + 50) <= 8000) text += state.textsToRead.shift() + "\n\n";
+  if (state.textsToRead.length) {
+    state.yesIntent = "ContinueReading";
+    sendResponse({
+      text: `${text}Continue?`,
+      title: state.articleToRead.title,
+      reprompt: "Should I continue reading?"
+    });
+  }
+  else {
+    state.yesIntent = "NextArticle";
+    sendResponse({
+      text: `${text}Would you like me to read the next article?`,
+      title: state.articleToRead.title,
+      reprompt: "You can also say 'related articles' to list articles related to the one you just heard."
+    });
+  }
+};
+
 handlers.ListRelatedArticles = function(intentRequest, session, sendResponse) {
   if (state.article) {
     sendResponse({
-      text: state.article.relatedArticles.map((article, index) => `${positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nYou can say 'read the first related article'.",
+      text: state.article.relatedArticles.map((article, index) => `${positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich related article would you like to read?",
       title: 'Related Articles',
-      reprompt: "Or say 'next article' to go to the next article about this topic."
+      reprompt: "You can say 'read the first related article'."
     })
   }
   else {
@@ -162,15 +200,21 @@ handlers.ListRelatedArticles = function(intentRequest, session, sendResponse) {
 
 handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
   if (state.article) {
-    getRelatedArticle(state.article.relatedArticles, intentRequest.intent.slots.position, article => {
+    getArticle(state.article.relatedArticles, intentRequest.intent.slots.position.value, article => {
       if (article) {
-        sendResponse({
-          text: `From ${article.source}.\n\n${article.title}.\n\n${article.text}.\n\nWould you like me to read the next related article?`,
-          title: article.title,
-          reprompt: "Would you like me to read the next related article?"
-        });
         state.relatedArticle = article;
-        state.yesIntent = "NextRelatedArticle";
+        if (article.texts) {
+          state.articleToRead = article;
+          this.ContinueReading(intentRequest, session, sendResponse);
+        }
+        else {
+          state.yesIntent = "NextRelatedArticle";
+          sendResponse({
+            text: "An error occurred while loading this article, should I try the next related article?",
+            title: "Error loading article",
+            reprompt: "Would you like me to read the next related article?"
+          });
+        }
       }
       else {
         sendResponse({
@@ -193,7 +237,7 @@ handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
 handlers.PreviousArticle = function(intentRequest, session, sendResponse) {
   var index = state.topic.articles.indexOf(state.article) - 1;
   if (index >= 0) {
-    this.ReadArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
+    this.ReadArticle(makeIntentRequest({topic: {value: state.topic.name}, position: {value: positions[index]}}), session, sendResponse);
   }
   else {
     sendResponse({
@@ -207,11 +251,11 @@ handlers.PreviousArticle = function(intentRequest, session, sendResponse) {
 handlers.NextArticle = function(intentRequest, session, sendResponse) {
   var index = state.topic.articles.indexOf(state.article) + 1;
   if (index < state.topic.articles.length) {
-    this.ReadArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
+    this.ReadArticle(makeIntentRequest({topic: {value: state.topic.name}, position: {value: positions[index]}}), session, sendResponse);
   }
   else {
     sendResponse({
-      text: "There are no more articles about this topic. Which topic would you like to read?",
+      text: "There are no more articles from this topic. Which topic would you like to read?",
       title: "No more articles",
       reprompt: "You can also say 'related articles' to list the articles related to the one you just heard."
     });
@@ -224,12 +268,12 @@ handlers.NextRelatedArticle = function(intentRequest, session, sendResponse) {
     this.ReadRelatedArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
   }
   else {
+    state.yesIntent = "NextArticle";
     sendResponse({
-      text: `There are no more related articles. Would you like to read the next article about ${state.topic.name}?`,
+      text: `There are no more related articles. Would you like to read the next article from ${state.topic.name}?`,
       title: "No more related articles",
       reprompt: "To list all articles about the topic, say 'list all articles'."
     });
-    state.yesIntent = "NextArticle";
   }
 };
 
@@ -251,6 +295,9 @@ handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
   if (state.yesIntent == "NextArticle") {
     this.NextArticle(makeIntentRequest(), session, sendResponse);
   }
+  else if (state.yesIntent == "ContinueReading") {
+    this.ContinueReading(makeIntentRequest(), session, sendResponse);
+  }
   else if (state.yesIntent == "NextRelatedArticle") {
     this.NextRelatedArticle(makeIntentRequest(), session, sendResponse);
   }
@@ -261,23 +308,46 @@ handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
     this.HangOut(makeIntentRequest(), session, sendResponse);
   }
   else {
+    state.yesIntent = "TopStories";
     sendResponse({
       text: "I'm not sure what you mean. Would you like to hear the top news stories?",
       title: "What do you mean?",
       reprompt: "To hear the list of topics, say 'list topics'."
     });
-    state.yesIntent = "TopStories";
   }
 };
 
 handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
-    if (state.yesIntent != "HangOut") {
+    if (state.yesIntent == "NextArticle") {
+      sendResponse({
+        text: "Please tell me which article you'd like to read.",
+        title: "Choose article",
+        reprompt: "You can say 'read the first article about Health'"
+      })
+    }
+    else if (state.yesIntent == "ContinueReading") {
+      state.yesIntent = "NextArticle";
+      sendResponse({
+        text: "Would you like me to read the next article?",
+        title: "Next article?",
+        reprompt: `Would you like to read the next article from ${state.topic.name}?`
+      });
+    }
+    else if (state.yesIntent == "NextRelatedArticle") {
+      state.yesIntent = "NextArticle";
+      sendResponse({
+        text: `Would you like me to read the next article from ${state.topic.name}?`,
+        title: "Next article?",
+        reprompt: `You can choose another topic by saying 'read me Technology news'`
+      });
+    }
+    else if (state.yesIntent != "HangOut") {
+      state.yesIntent = "HangOut";
       sendResponse({
         text: "So, what do ya want to do? Hang out?",
         title: "What next?",
         reprompt: "Do you want to hang out?"
       });
-      state.yesIntent = "HangOut";
     }
     else {
       sendResponse({
@@ -306,40 +376,96 @@ function makeIntentRequest(slots, name) {
   };
 }
 
-function getTopic(topicSlot, callback) {
-  if (topicSlot) {
-    var feed = feeds[topicSlot.value];
-    if (feed) {
-      require("http").get(feed, res => {
-        var buf;
-        res.on("data", chunk => buf = buf ? Buffer.concat([buf, chunk]) : chunk);
-        res.on("end", () => callback({
-          name: topicSlot.value,
-          articles: parseFeed(buf.toString())
-        }));
-      })
-      .on("error", err => callback(null, err));
+function getTopic(topicName, callback) {
+  if (topicName) {
+    topicName = topicName.toLowerCase();
+    if (!state.topics[topicName]) {
+      var link = feeds[topicName];
+      if (link) {
+        loadContent(link, content => {
+          var topic = parseFeed(content);
+          topic.name = topicName;
+          state.topics[topicName] = topic;
+          callback(topic);
+        });
+      }
+      else callback(null);
     }
-    else callback(null);
+    else callback(state.topics[topicName]);
   }
   else callback(state.topic);
 }
 
-function getArticle(articles, positionSlot, callback) {
-
+function getArticle(articles, position, callback) {
+  position = position.toLowerCase();
+  var index = positions.indexOf(position);
+  if (index == -1) index = positions2.indexOf(position);
+  var article = articles[index];
+  if (article) {
+    if (!article.texts) {
+      loadContent(article.link, content => {
+        article.texts = parseArticle(content);
+        callback(article);
+      });
+    }
+    else callback(article);
+  }
+  else callback(null);
 }
 
-function getRelatedArticle(articles, positionSlot, callback) {
-
+function loadContent(link, callback) {
+  require("request")
+    .get(link)
+    .on("response", res => {
+      var buf;
+      res.on("data", chunk => buf = buf ? Buffer.concat([buf, chunk]) : chunk);
+      res.on("end", () => callback(buf.toString()));
+    })
+    .on("error", err => callback(null, err));
 }
 
 function parseFeed(xml) {
-  var doc = $.parseXML(xml);
-  return $(doc).find("channel:first").children("item").map(item => {
+  var doc = domParser.parseFromString(xml);
+  var articles = $(doc).find("channel:first > item").map(function() {
+    var title = $(this).children("title:first").text();
+    var titleEnd = title.lastIndexOf(" - ");
+    var desc = $(this).children("description:first").text();
+    var descDoc = $.parseHTML(desc);
     return {
-      source: ,
-      title: ,
-      text:
-    }
+      source: title.slice(titleEnd + 3),
+      title: title.slice(0, titleEnd),
+      link: $(this).children("link:first").text(),
+      relatedArticles: $(descDoc).find("div.lh > font").slice(2,5).map(function() {
+        var link = $(this).children("a:first");
+        return {
+          title: link.text(),
+          link: link.attr("href"),
+          source: $(this).children("font:first").text()
+        };
+      }).get()
+    };
+  }).get();
+  return {
+    articles: articles
+  };
+}
+
+function parseArticle(html) {
+  html = '<div>' + html.replace(/^[\s\S]*<body.*?>|<\/body>[\s\S]*$/ig, '') + '</div>';
+  var doc = $.parseHTML(html);
+  var longest = findLongestParagraph(doc);
+  if (longest) {
+    var elems = $(longest.parentNode).children("h1, h2, h3, h4, h5, h6, p, blockquote").get();
+    return elems.map(elem => $(elem).text());
+  }
+  else return null;
+}
+
+function findLongestParagraph(doc) {
+  var longest = {length: 0};
+  $(doc).find("p:visible").each(function() {
+    var text = $(this).text();
+    if (text.length > longest.length) longest = {p: this, length: text.length};
   });
+  return longest.p;
 }
