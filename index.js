@@ -181,15 +181,25 @@ handlers.ContinueReading = function(intentRequest, session, sendResponse) {
 
 handlers.ListRelatedArticles = function(intentRequest, session, sendResponse) {
   if (state.article) {
-    sendResponse({
-      text: state.article.relatedArticles.map((article, index) => `${positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich related article would you like to read?",
-      title: 'Related Articles',
-      reprompt: "You can say 'read the first related article'."
-    })
+    if (state.article.relatedArticles.length) {
+      sendResponse({
+        text: state.article.relatedArticles.map((article, index) => `${positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich related article would you like to read?",
+        title: 'Related Articles',
+        reprompt: "You can say 'read the first related article'."
+      });
+    }
+    else {
+      state.yesIntent = "NextArticle";
+      sendResponse({
+        text: "No related articles found, should I read the next article?",
+        title: "No related articles",
+        reprompt: "Should I read the next article?"
+      })
+    }
   }
   else {
     sendResponse({
-      text: "You have not read any articles. To read an article about a topic, say 'read the first article about Science'.",
+      text: "You haven't read anything yet. To read an article about a topic, say 'read the first article about Science'.",
       title: 'No related articles',
       reprompt: "To list articles about a topic, say 'list articles about Science'."
     })
@@ -228,7 +238,7 @@ handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
   }
   else {
     sendResponse({
-      text: "You have not read any articles. To read an article about a topic, say 'read the first article about Science'.",
+      text: "You haven't read anything yet. To read an article about a topic, say 'read the first article about Science'.",
       title: 'No related articles',
       reprompt: "To list articles about a topic, say 'list articles about Science'."
     })
@@ -236,29 +246,47 @@ handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.PreviousArticle = function(intentRequest, session, sendResponse) {
-  var index = state.topic.articles.indexOf(state.article) - 1;
-  if (index >= 0) {
-    this.ReadArticle(makeIntentRequest({topic: {value: state.topic.name}, position: {value: positions[index]}}), session, sendResponse);
+  if (state.article) {
+    var index = state.topic.articles.indexOf(state.article) - 1;
+    if (index >= 0) {
+      this.ReadArticle(makeIntentRequest({topic: {value: state.topic.name}, position: {value: positions[index]}}), session, sendResponse);
+    }
+    else {
+      sendResponse({
+        text: "You made an invalid choice. Which article would you like me to read?",
+        title: "Invalid choice",
+        reprompt: "You can say 'read me the first article'."
+      });
+    }
   }
   else {
     sendResponse({
-      text: "You made an invalid choice. Which article would you like me to read?",
-      title: "Invalid choice",
-      reprompt: "You can say 'read me the first article'."
+      text: "Which topic would you like to read?",
+      title: "Which topic?",
+      reprompt: "For a list of topics, say 'list topics'."
     });
   }
 };
 
 handlers.NextArticle = function(intentRequest, session, sendResponse) {
-  var index = state.topic.articles.indexOf(state.article) + 1;
-  if (index < state.topic.articles.length) {
-    this.ReadArticle(makeIntentRequest({topic: {value: state.topic.name}, position: {value: positions[index]}}), session, sendResponse);
+  if (state.topic) {
+    var index = state.topic.articles.indexOf(state.article) + 1;
+    if (index < state.topic.articles.length) {
+      this.ReadArticle(makeIntentRequest({topic: {value: state.topic.name}, position: {value: positions[index]}}), session, sendResponse);
+    }
+    else {
+      sendResponse({
+        text: "There are no more articles from this topic. Which topic would you like to read?",
+        title: "No more articles",
+        reprompt: "For a list of topics, say 'list topics'."
+      });
+    }
   }
   else {
     sendResponse({
-      text: "There are no more articles from this topic. Which topic would you like to read?",
-      title: "No more articles",
-      reprompt: "You can also say 'related articles' to list the articles related to the one you just heard."
+      text: "Which topic would you like to read?",
+      title: "Which topic?",
+      reprompt: "For a list of topics, say 'list topics'."
     });
   }
 };
@@ -427,7 +455,10 @@ function loadContent(link, callback) {
 
 function parseFeed(xml) {
   var doc = domParser.parseFromString(xml);
-  var articles = $(doc).find("channel:first > item").map(function() {
+  return {
+    articles: $(doc).find("channel:first > item").map(toArticle).get()
+  };
+  function toArticle() {
     var title = $(this).children("title:first").text();
     var titleEnd = title.lastIndexOf(" - ");
     var desc = $(this).children("description:first").text();
@@ -436,19 +467,21 @@ function parseFeed(xml) {
       source: title.slice(titleEnd + 3),
       title: title.slice(0, titleEnd),
       link: $(this).children("link:first").text(),
-      relatedArticles: $(descDoc).find("div.lh > font").slice(2,5).map(function() {
-        var link = $(this).children("a:first");
-        return {
-          title: link.text(),
-          link: link.attr("href"),
-          source: $(this).children("font:first").text()
-        };
-      }).get()
+      relatedArticles: $(descDoc).find("div.lh > font").filter(isRelatedArticle).map(toRelatedArticle).get()
     };
-  }).get();
-  return {
-    articles: articles
-  };
+  }
+  function isRelatedArticle() {
+    var children = $(this).children();
+    return children.length == 2 && children.eq(0).is("a") && children.eq(1).is("font");
+  }
+  function toRelatedArticle() {
+    var link = $(this).children("a:first");
+    return {
+      title: link.text(),
+      link: link.attr("href"),
+      source: $(this).children("font:first").text()
+    };
+  }
 }
 
 function parseArticle(html) {
@@ -466,7 +499,7 @@ function parseArticle(html) {
   });
   if (longest.block) {
     var elems = $(longest.block).children(tags.join(", ")).get();
-    return elems.map(elem => $(elem).text());
+    return elems.map(elem => $(elem).text().trim()).filter(text => text);
   }
   else return null;
 }
