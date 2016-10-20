@@ -124,7 +124,10 @@ handlers.ReadArticle = function(intentRequest, session, sendResponse) {
         if (article) {
           state.article = article;
           if (article.texts) {
-            state.articleToRead = article;
+            state.toRead = {
+              title: article.title,
+              texts: [`From ${article.source}.`, `${article.title}.`].concat(article.texts)
+            };
             this.ContinueReading(intentRequest, session, sendResponse);
           }
           else {
@@ -156,18 +159,13 @@ handlers.ReadArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ContinueReading = function(intentRequest, session, sendResponse) {
-  var text;
-  if (state.textsToRead && state.textsToRead.length) text = "";
-  else {
-    state.textsToRead = state.articleToRead.texts.slice();
-    text = `From ${state.articleToRead.source}.\n\n${state.articleToRead.title}.\n\n`;
-  }
-  while (state.textsToRead.length && (text.length + state.textsToRead[0].length + 50) <= 8000) text += state.textsToRead.shift() + "\n\n";
-  if (state.textsToRead.length) {
+  var text = "";
+  while (state.toRead.texts.length && (text.length + state.toRead.texts[0].length + 50) <= 8000) text += state.toRead.texts.shift() + "\n\n";
+  if (state.toRead.texts.length) {
     state.yesIntent = "ContinueReading";
     sendResponse({
       text: `${text}Continue?`,
-      title: state.articleToRead.title,
+      title: state.toRead.title,
       reprompt: "Should I continue reading?"
     });
   }
@@ -175,7 +173,7 @@ handlers.ContinueReading = function(intentRequest, session, sendResponse) {
     state.yesIntent = "NextArticle";
     sendResponse({
       text: `${text}Would you like me to read the next article?`,
-      title: state.articleToRead.title,
+      title: state.toRead.title,
       reprompt: "You can also say 'related articles' to list articles related to the one you just heard."
     });
   }
@@ -204,7 +202,10 @@ handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
       if (article) {
         state.relatedArticle = article;
         if (article.texts) {
-          state.articleToRead = article;
+          state.toRead = {
+            title: article.title,
+            texts: [`From ${article.source}.`, `${article.title}.`].concat(article.texts)
+          };
           this.ContinueReading(intentRequest, session, sendResponse);
         }
         else {
@@ -453,19 +454,19 @@ function parseFeed(xml) {
 function parseArticle(html) {
   html = '<div>' + html.replace(/^[\s\S]*<body.*?>|<\/body>[\s\S]*$/ig, '') + '</div>';
   var doc = $.parseHTML(html);
-  var longest = findLongestParagraph(doc);
-  if (longest) {
-    var elems = $(longest.parentNode).children("h1, h2, h3, h4, h5, h6, p, blockquote").get();
+  $(doc).find("a > *").remove();
+  var tags = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "blockquote"];
+  $(doc).find(tags.map(tag => tag + " > div").join(", ")).remove();
+  var textBlocks = $(doc).find("p").parent().get();
+  $.uniqueSort(textBlocks);
+  var longest = {length: 0};
+  textBlocks.forEach(block => {
+    var text = $(block).children(tags.join(", ")).text();
+    if (text.length > longest.length) longest = {block: block, length: text.length};
+  });
+  if (longest.block) {
+    var elems = $(longest.block).children(tags.join(", ")).get();
     return elems.map(elem => $(elem).text());
   }
   else return null;
-}
-
-function findLongestParagraph(doc) {
-  var longest = {length: 0};
-  $(doc).find("p:visible").each(function() {
-    var text = $(this).text();
-    if (text.length > longest.length) longest = {p: this, length: text.length};
-  });
-  return longest.p;
 }
