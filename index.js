@@ -38,11 +38,6 @@ var DOMParser = require("xmldom").DOMParser;
 var domParser = new DOMParser();
 
 var AWS = require("aws-sdk");
-AWS.config.update({
-  accessKeyId: 'AKIAJJYDT5S6ZEOK4JXA',
-  secretAccessKey: '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',
-  region: 'us-east-1'
-});
 var s3 = new AWS.S3();
 
 exports.handler = function(event, context, callback) {
