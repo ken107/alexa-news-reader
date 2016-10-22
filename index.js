@@ -20,6 +20,10 @@ var feeds = {
   "health": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=m&output=rss",
   "spotlight": "https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=ir&output=rss",
 };
+//https://news.google.com/news/feeds?cf=all&ned=us&hl=en&q=education&output=rss
+
+var log = require("loglevel");
+log.setLevel(process.env.LOG_LEVEL || "warn");
 
 var $;
 require("jsdom").env("", (err, window) => {
@@ -32,6 +36,14 @@ require("jsdom").env("", (err, window) => {
 
 var DOMParser = require("xmldom").DOMParser;
 var domParser = new DOMParser();
+
+var AWS = require("aws-sdk");
+AWS.config.update({
+  accessKeyId: 'AKIAJJYDT5S6ZEOK4JXA',
+  secretAccessKey: '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',
+  region: 'us-east-1'
+});
+var s3 = new AWS.S3();
 
 exports.handler = function(event, context, callback) {
   try {
@@ -81,6 +93,7 @@ exports.handler = function(event, context, callback) {
 };
 
 handlers.Launch = function(launchRequest, session, sendResponse) {
+  log.debug("Launch");
   sendResponse({
     text: "Which topic would you like to read?",
     title: "Welcome",
@@ -89,6 +102,7 @@ handlers.Launch = function(launchRequest, session, sendResponse) {
 };
 
 handlers.ListTopics = function(intentRequest, session, sendResponse) {
+  log.debug("ListTopics");
   sendResponse({
     text: topics.join(", ") + "\n\nWhich topic would you like to read?",
     title: "Topics",
@@ -97,6 +111,7 @@ handlers.ListTopics = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ListArticles = function(intentRequest, session, sendResponse) {
+  log.debug("ListArticles");
   getTopic(intentRequest.intent.slots.topic.value, topic => {
     if (topic) {
       state.topic = topic;
@@ -117,6 +132,7 @@ handlers.ListArticles = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ReadArticle = function(intentRequest, session, sendResponse) {
+  log.debug("ReadArticle");
   getTopic(intentRequest.intent.slots.topic.value, topic => {
     if (topic) {
       state.topic = topic;
@@ -159,6 +175,7 @@ handlers.ReadArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ContinueReading = function(intentRequest, session, sendResponse) {
+  log.debug("ContinueReading");
   var text = "";
   while (state.toRead.texts.length && (text.length + state.toRead.texts[0].length + 50) <= 8000) text += state.toRead.texts.shift() + "\n\n";
   if (state.toRead.texts.length) {
@@ -180,6 +197,7 @@ handlers.ContinueReading = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ListRelatedArticles = function(intentRequest, session, sendResponse) {
+  log.debug("ListRelatedArticles");
   if (state.article) {
     if (state.article.relatedArticles.length) {
       sendResponse({
@@ -207,6 +225,7 @@ handlers.ListRelatedArticles = function(intentRequest, session, sendResponse) {
 };
 
 handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
+  log.debug("ReadRelatedArticle");
   if (state.article) {
     getArticle(state.article.relatedArticles, intentRequest.intent.slots.position.value, article => {
       if (article) {
@@ -246,6 +265,7 @@ handlers.ReadRelatedArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.PreviousArticle = function(intentRequest, session, sendResponse) {
+  log.debug("PreviousArticle");
   if (state.article) {
     var index = state.topic.articles.indexOf(state.article) - 1;
     if (index >= 0) {
@@ -269,6 +289,7 @@ handlers.PreviousArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.NextArticle = function(intentRequest, session, sendResponse) {
+  log.debug("NextArticle");
   if (state.topic) {
     var index = state.topic.articles.indexOf(state.article) + 1;
     if (index < state.topic.articles.length) {
@@ -292,6 +313,7 @@ handlers.NextArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.NextRelatedArticle = function(intentRequest, session, sendResponse) {
+  log.debug("NextRelatedArticle");
   var index = state.article.relatedArticles.indexOf(state.relatedArticle) + 1;
   if (index < state.article.relatedArticles.length) {
     this.ReadRelatedArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
@@ -307,6 +329,7 @@ handlers.NextRelatedArticle = function(intentRequest, session, sendResponse) {
 };
 
 handlers.HangOut = function(intentRequest, session, sendResponse)  {
+  log.debug("HangOut");
   var responses = [
     "Okay, let's hang out together!",
     "Okay, sounds fun!",
@@ -321,6 +344,7 @@ handlers.HangOut = function(intentRequest, session, sendResponse)  {
 };
 
 handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
+  log.debug("YesIntent");
   if (state.yesIntent == "NextArticle") {
     this.NextArticle(makeIntentRequest(), session, sendResponse);
   }
@@ -347,6 +371,7 @@ handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
 };
 
 handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
+  log.debug("NoIntent");
     if (state.yesIntent == "NextArticle") {
       sendResponse({
         text: "Please tell me which article you'd like to read.",
@@ -389,6 +414,7 @@ handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
 
 handlers['AMAZON.StopIntent'] =
 handlers['AMAZON.CancelIntent'] = function(intentRequest, session, sendResponse) {
+  log.debug("StopIntent");
   sendResponse({
     text: "Goodbye.",
     title: "Goodbye",
@@ -406,19 +432,45 @@ function makeIntentRequest(slots, name) {
 }
 
 function getTopic(topicName, callback) {
+  log.debug("getTopic", topicName);
   if (topicName) {
     topicName = topicName.toLowerCase();
     if (!state.topics[topicName]) {
-      var link = feeds[topicName];
-      if (link) {
-        loadContent(link, content => {
-          var topic = parseFeed(content);
-          topic.name = topicName;
-          state.topics[topicName] = topic;
-          callback(topic);
-        });
-      }
-      else callback(null);
+      var key = "topic-" + topicName;
+      readCache(key, entry => {
+        log.debug("cache-entry", key, entry);
+        if (entry) {
+          state.topics[topicName] = JSON.parse(entry.Body.toString());
+          callback(state.topics[topicName]);
+          if (new Date().getTime() > Date.parse(entry.LastModified) + 2*60*1000) {
+            if (feeds[topicName]) {
+              loadContent(feeds[topicName], content => {
+                if (content) {
+                  var topic = parseFeed(content);
+                  topic.name = topicName;
+                  state.topics[topicName] = topic;
+                  writeCache(key, JSON.stringify(topic));
+                }
+              });
+            }
+          }
+        }
+        else {
+          if (feeds[topicName]) {
+            loadContent(feeds[topicName], content => {
+              if (content) {
+                var topic = parseFeed(content);
+                topic.name = topicName;
+                state.topics[topicName] = topic;
+                writeCache(key, JSON.stringify(topic));
+                callback(topic);
+              }
+              else callback(null);
+            });
+          }
+          else callback(null);
+        }
+      });
     }
     else callback(state.topics[topicName]);
   }
@@ -426,15 +478,37 @@ function getTopic(topicName, callback) {
 }
 
 function getArticle(articles, position, callback) {
+  log.debug("getArticle");
   position = position.toLowerCase();
   var index = positions.indexOf(position);
   if (index == -1) index = positions2.indexOf(position);
   var article = articles[index];
   if (article) {
     if (!article.texts) {
-      loadContent(article.link, content => {
-        article.texts = parseArticle(content);
-        callback(article);
+      var key = "article-" + require('crypto').createHash('md5').update(article.link).digest("hex");
+      readCache(key, entry => {
+        log.debug("cache-entry", key, entry);
+        if (entry) {
+          article.texts = JSON.parse(entry.Body.toString());
+          callback(article);
+          if (new Date().getTime() > Date.parse(entry.LastModified) + Math.max(Date.parse(entry.LastModified)-entry.Metadata.created, 5*60*1000)) {
+            loadContent(article.link, content => {
+              if (content) {
+                article.texts = parseArticle(content);
+                writeCache(key, JSON.stringify(article.texts), {created: entry.Metadata.created});
+              }
+            });
+          }
+        }
+        else {
+          loadContent(article.link, content => {
+            if (content) {
+              article.texts = parseArticle(content);
+              writeCache(key, JSON.stringify(article.texts), {created: String(new Date().getTime())});
+            }
+            callback(article);
+          });
+        }
       });
     }
     else callback(article);
@@ -443,14 +517,27 @@ function getArticle(articles, position, callback) {
 }
 
 function loadContent(link, callback) {
+  log.debug("loadContent", link);
   require("request")
-    .get(link)
-    .on("response", res => {
-      var buf;
-      res.on("data", chunk => buf = buf ? Buffer.concat([buf, chunk]) : chunk);
-      res.on("end", () => callback(buf.toString()));
-    })
-    .on("error", err => callback(null, err));
+    .get({
+      url: link,
+      jar: true,
+      gzip: true,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
+      }
+    },
+    (err, res, body) => {
+      if (err) {
+        log.error(err);
+        callback(null);
+      }
+      else if (res.statusCode != 200) {
+        log.error(res.statusCode);
+        callback(null);
+      }
+      else callback(body);
+    });
 }
 
 function parseFeed(xml) {
@@ -466,7 +553,7 @@ function parseFeed(xml) {
     return {
       source: title.slice(titleEnd + 3),
       title: title.slice(0, titleEnd),
-      link: $(this).children("link:first").text(),
+      link: getLink($(this).children("link:first").text()),
       relatedArticles: $(descDoc).find("div.lh > font").filter(isRelatedArticle).map(toRelatedArticle).get()
     };
   }
@@ -478,9 +565,12 @@ function parseFeed(xml) {
     var link = $(this).children("a:first");
     return {
       title: link.text(),
-      link: link.attr("href"),
+      link: getLink(link.attr("href")),
       source: $(this).children("font:first").text()
     };
+  }
+  function getLink(text) {
+    return require("url").parse(text, true).query.url;
   }
 }
 
@@ -502,4 +592,29 @@ function parseArticle(html) {
     return elems.map(elem => $(elem).text().trim()).filter(text => text);
   }
   else return null;
+}
+
+function writeCache(key, body, metadata) {
+  log.debug("writeCache", key);
+  s3.putObject({
+    Bucket: "news-reader-article-cache",
+    Key: key,
+    Body: body,
+    Metadata: metadata
+  },
+  function(err) {
+    if (err) console.error(err);
+  });
+}
+
+function readCache(key, callback) {
+  log.debug("readCache", key);
+  s3.getObject({
+    Bucket: "news-reader-article-cache",
+    Key: key
+  },
+  function(err, data) {
+    if (err && err.code != 'NoSuchKey') console.error(err);
+    callback(data);
+  });
 }
