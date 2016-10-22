@@ -115,11 +115,12 @@ handlers.ListArticles = function(intentRequest, session, sendResponse) {
   getTopic(intentRequest.intent.slots.topic.value, topic => {
     if (topic) {
       state.topic = topic;
-      sendResponse({
-        text: `In ${topic.name}.\n\n` + topic.articles.map((article, index) => `${positions[index]} article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich article would you like to read?",
-        title: `In ${topic.name}`,
-        reprompt: "You can say 'read the first article'."
-      });
+      state.toList = {
+        topicName: topic.name,
+        heads: [`In ${topic.name}.`],
+        texts: topic.articles.map((article, index) => `${positions[index]} article.\nFrom ${article.source}.\n${article.title}.`)
+      };
+      this.ContinueListing(intentRequest, session, sendResponse);
     }
     else {
       sendResponse({
@@ -130,6 +131,27 @@ handlers.ListArticles = function(intentRequest, session, sendResponse) {
     }
   });
 };
+
+handlers.ContinueListing = function(intentRequest, session, sendResponse) {
+  var text = "";
+  while (state.toList.heads.length) text += state.toList.heads.shift() + "\n\n";
+  for (var i=0; i<3 && state.toList.texts.length; i++) text += state.toList.texts.shift() + "\n\n";
+  if (state.toList.texts.length) {
+    state.yesIntent = "ContinueListing";
+    sendResponse({
+      text: `${text}Continue?`,
+      title: `In ${state.toList.topicName}`,
+      reprompt: "Or you can say 'read the first article'."
+    });
+  }
+  else {
+    sendResponse({
+      text: `${text}Which article would you like to read?`,
+      title: `In ${state.topic.name}`,
+      reprompt: "You can say 'read the first article'."
+    });
+  }
+}
 
 handlers.ReadArticle = function(intentRequest, session, sendResponse) {
   log.debug("ReadArticle");
@@ -345,20 +367,23 @@ handlers.HangOut = function(intentRequest, session, sendResponse)  {
 
 handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
   log.debug("YesIntent");
-  if (state.yesIntent == "NextArticle") {
-    this.NextArticle(makeIntentRequest(), session, sendResponse);
+  if (state.yesIntent == "ContinueListing") {
+    this.ContinueListing(intentRequest, session, sendResponse);
+  }
+  else if (state.yesIntent == "NextArticle") {
+    this.NextArticle(intentRequest, session, sendResponse);
   }
   else if (state.yesIntent == "ContinueReading") {
-    this.ContinueReading(makeIntentRequest(), session, sendResponse);
+    this.ContinueReading(intentRequest, session, sendResponse);
   }
   else if (state.yesIntent == "NextRelatedArticle") {
-    this.NextRelatedArticle(makeIntentRequest(), session, sendResponse);
+    this.NextRelatedArticle(intentRequest, session, sendResponse);
   }
   else if (state.yesIntent == "TopStories") {
     this.ListArticles(makeIntentRequest({topic: {value: "Top Stories"}}), session, sendResponse);
   }
   else if (state.yesIntent == "HangOut") {
-    this.HangOut(makeIntentRequest(), session, sendResponse);
+    this.HangOut(intentRequest, session, sendResponse);
   }
   else {
     state.yesIntent = "TopStories";
@@ -372,7 +397,14 @@ handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
 
 handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
   log.debug("NoIntent");
-    if (state.yesIntent == "NextArticle") {
+    if (state.yesIntent == "ContinueListing") {
+      sendResponse({
+        text: "Please tell me which article you'd like to read.",
+        title: "Choose article",
+        reprompt: "You can say 'read the first article'."
+      })
+    }
+    else if (state.yesIntent == "NextArticle") {
       sendResponse({
         text: "Please tell me which article you'd like to read.",
         title: "Choose article",
