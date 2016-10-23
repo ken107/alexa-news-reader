@@ -393,6 +393,7 @@ handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
 handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
   log.debug("NoIntent");
     if (state.yesIntent == "ContinueListing") {
+      state.yesIntent = null;
       sendResponse({
         text: "Please tell me which article you'd like to read.",
         title: "Choose article",
@@ -400,6 +401,7 @@ handlers['AMAZON.NoIntent'] = function(intentRequest, session, sendResponse) {
       })
     }
     else if (state.yesIntent == "NextArticle") {
+      state.yesIntent = null;
       sendResponse({
         text: "Please tell me which article you'd like to read.",
         title: "Choose article",
@@ -469,7 +471,7 @@ function getTopic(topicName, callback) {
         if (entry) {
           state.topics[topicName] = JSON.parse(entry.Body.toString());
           callback(state.topics[topicName]);
-          if (new Date().getTime() > Date.parse(entry.LastModified) + 2*60*1000) {
+          if (new Date().getTime() > Date.parse(entry.LastModified) + 5*60*1000) {
             if (feeds[topicName]) {
               loadContent(feeds[topicName], content => {
                 if (content) {
@@ -518,14 +520,6 @@ function getArticle(articles, position, callback) {
         if (entry) {
           article.texts = JSON.parse(entry.Body.toString());
           callback(article);
-          if (new Date().getTime() > Date.parse(entry.LastModified) + Math.max(Date.parse(entry.LastModified)-entry.Metadata.created, 5*60*1000)) {
-            loadContent(article.link, content => {
-              if (content) {
-                article.texts = parseArticle(content);
-                writeCache(key, JSON.stringify(article.texts), {created: entry.Metadata.created});
-              }
-            });
-          }
         }
         else {
           loadContent(article.link, content => {
@@ -627,6 +621,7 @@ function writeCache(key, body, metadata) {
     Bucket: "news-reader-article-cache",
     Key: key,
     Body: body,
+    CacheControl: "no-cache",
     Metadata: metadata
   },
   function(err) {
