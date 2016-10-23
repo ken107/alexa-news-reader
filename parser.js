@@ -57,7 +57,10 @@ var articleParsers = [
 ];
 
 exports.parseArticle = function(html, link) {
-  var doc = $.parseHTML('<div>' + html.replace(/<script[\s\S]*?\/script>/g, '').replace(/^[\s\S]*<body.*?>|<\/body>[\s\S]*$/ig, '') + '</div>');
+  html = html.replace(/<!--[\s\S]*?-->/g, '');
+  html = html.replace(/<script[\s\S]*?\/script>/g, '');
+  html = html.replace(/^[\s\S]*<body.*?>|<\/body>[\s\S]*$/ig, '');
+  var doc = $.parseHTML('<div>' + html + '</div>');
   var hostname = require("url").parse(link, true).hostname;
   return articleParsers.find(parser => parser.matcher.test(hostname)).parseArticle(doc);
 };

@@ -515,7 +515,8 @@ function getArticle(articles, position, callback) {
           callback({
             source: article.source,
             title: article.title,
-            texts: JSON.parse(entry.Body.toString())
+            texts: JSON.parse(entry.Body.toString()),
+            relatedArticles: article.relatedArticles
           });
         }
         //if cache misses, load from source
@@ -529,7 +530,8 @@ function getArticle(articles, position, callback) {
             callback({
               source: article.source,
               title: article.title,
-              texts: texts
+              texts: texts,
+              relatedArticles: article.relatedArticles
             });
           });
         }
