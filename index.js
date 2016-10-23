@@ -25,20 +25,10 @@ var feeds = {
 var log = require("loglevel");
 log.setLevel(process.env.LOG_LEVEL || "warn");
 
-var $;
-require("jsdom").env("", (err, window) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-  $ = require("jquery")(window);
-});
-
-var DOMParser = require("xmldom").DOMParser;
-var domParser = new DOMParser();
-
 var AWS = require("aws-sdk");
 var s3 = new AWS.S3();
+
+var parser = require("./parser.js");
 
 exports.handler = function(event, context, callback) {
   try {
@@ -462,20 +452,26 @@ function makeIntentRequest(slots, name) {
 
 function getTopic(topicName, callback) {
   log.debug("getTopic", topicName);
+  //if topic name is specified
   if (topicName) {
     topicName = topicName.toLowerCase();
+    //if topic not loaded
     if (!state.topics[topicName]) {
       var key = "topic-" + topicName;
+      //fetch from S3 cache
       readCache(key, entry => {
         log.debug("cache-entry", key, entry);
+        //if cache hits
         if (entry) {
+          //return cache entry
           state.topics[topicName] = JSON.parse(entry.Body.toString());
           callback(state.topics[topicName]);
+          //if cache entry had expired, refresh
           if (new Date().getTime() > Date.parse(entry.LastModified) + 5*60*1000) {
             if (feeds[topicName]) {
               loadContent(feeds[topicName], content => {
                 if (content) {
-                  var topic = parseFeed(content);
+                  var topic = parser.parseFeed(content);
                   topic.name = topicName;
                   state.topics[topicName] = topic;
                   writeCache(key, JSON.stringify(topic));
@@ -484,11 +480,12 @@ function getTopic(topicName, callback) {
             }
           }
         }
+        //if cache misses, load from source
         else {
           if (feeds[topicName]) {
             loadContent(feeds[topicName], content => {
               if (content) {
-                var topic = parseFeed(content);
+                var topic = parser.parseFeed(content);
                 topic.name = topicName;
                 state.topics[topicName] = topic;
                 writeCache(key, JSON.stringify(topic));
@@ -501,8 +498,10 @@ function getTopic(topicName, callback) {
         }
       });
     }
+    //if topic already loaded, return that
     else callback(state.topics[topicName]);
   }
+  //if topic name isn't specified, return the current topic (which may be null)
   else callback(state.topic);
 }
 
@@ -513,18 +512,22 @@ function getArticle(articles, position, callback) {
   if (index == -1) index = positions2.indexOf(position);
   var article = articles[index];
   if (article) {
+    //if article content not loaded
     if (!article.texts) {
       var key = "article-" + require('crypto').createHash('md5').update(article.link).digest("hex");
+      //fetch from S3 cache
       readCache(key, entry => {
         log.debug("cache-entry", key, entry);
+        //if cache hits, use cache entry
         if (entry) {
           article.texts = JSON.parse(entry.Body.toString());
           callback(article);
         }
+        //if cache misses, load from source
         else {
           loadContent(article.link, content => {
             if (content) {
-              article.texts = parseArticle(content);
+              article.texts = parser.parseArticle(content, article.link);
               writeCache(key, JSON.stringify(article.texts), {created: String(new Date().getTime())});
             }
             callback(article);
@@ -532,6 +535,7 @@ function getArticle(articles, position, callback) {
         }
       });
     }
+    //if article content already loaded, simply return
     else callback(article);
   }
   else callback(null);
@@ -559,60 +563,6 @@ function loadContent(link, callback) {
       }
       else callback(body);
     });
-}
-
-function parseFeed(xml) {
-  var doc = domParser.parseFromString(xml);
-  return {
-    articles: $(doc).find("channel:first > item").map(toArticle).get()
-  };
-  function toArticle() {
-    var title = $(this).children("title:first").text();
-    var titleEnd = title.lastIndexOf(" - ");
-    var desc = $(this).children("description:first").text();
-    var descDoc = $.parseHTML(desc);
-    return {
-      source: title.slice(titleEnd + 3),
-      title: title.slice(0, titleEnd),
-      link: getLink($(this).children("link:first").text()),
-      relatedArticles: $(descDoc).find("div.lh > font").filter(isRelatedArticle).map(toRelatedArticle).get()
-    };
-  }
-  function isRelatedArticle() {
-    var children = $(this).children();
-    return children.length == 2 && children.eq(0).is("a") && children.eq(1).is("font");
-  }
-  function toRelatedArticle() {
-    var link = $(this).children("a:first");
-    return {
-      title: link.text(),
-      link: getLink(link.attr("href")),
-      source: $(this).children("font:first").text()
-    };
-  }
-  function getLink(text) {
-    return require("url").parse(text, true).query.url;
-  }
-}
-
-function parseArticle(html) {
-  html = '<div>' + html.replace(/^[\s\S]*<body.*?>|<\/body>[\s\S]*$/ig, '') + '</div>';
-  var doc = $.parseHTML(html);
-  $(doc).find("a > *").remove();
-  var tags = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "blockquote"];
-  $(doc).find(tags.map(tag => tag + " > div").join(", ")).remove();
-  var textBlocks = $(doc).find("p").parent().get();
-  $.uniqueSort(textBlocks);
-  var longest = {length: 0};
-  textBlocks.forEach(block => {
-    var text = $(block).children(tags.join(", ")).text();
-    if (text.length > longest.length) longest = {block: block, length: text.length};
-  });
-  if (longest.block) {
-    var elems = $(longest.block).children(tags.join(", ")).get();
-    return elems.map(elem => $(elem).text().trim()).filter(text => text);
-  }
-  else return null;
 }
 
 function writeCache(key, body, metadata) {
