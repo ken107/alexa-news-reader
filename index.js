@@ -584,7 +584,8 @@ function readCache(key, callback) {
   log.debug("readCache", key);
   if (cache[key]) {
     log.debug("local hit");
-    return cache[key];
+    callback(cache[key]);
+    return;
   }
   s3.getObject({
     Bucket: "news-reader-article-cache",
