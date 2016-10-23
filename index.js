@@ -506,36 +506,29 @@ function getArticle(articles, position, callback) {
   if (index == -1) index = positions2.indexOf(position);
   var article = articles[index];
   if (article) {
+    if (!article.texts) {
       var key = "article-" + require('crypto').createHash('md5').update(article.link).digest("hex");
       //fetch from S3 cache
       readCache(key, entry => {
         log.debug("cache-entry", key, entry);
         //if cache hits, use cache entry
         if (entry) {
-          callback({
-            source: article.source,
-            title: article.title,
-            texts: JSON.parse(entry.Body.toString()),
-            relatedArticles: article.relatedArticles
-          });
+          article.texts = JSON.parse(entry.Body.toString());
+          callback(article);
         }
         //if cache misses, load from source
         else {
           loadContent(article.link, content => {
-            var texts;
             if (content) {
-              texts = parser.parseArticle(content, article.link);
-              writeCache(key, JSON.stringify(texts));
+              article.texts = parser.parseArticle(content, article.link);
+              writeCache(key, JSON.stringify(article.texts));
             }
-            callback({
-              source: article.source,
-              title: article.title,
-              texts: texts,
-              relatedArticles: article.relatedArticles
-            });
+            callback(article);
           });
         }
       });
+    }
+    else callback(article);
   }
   else callback(null);
 }
