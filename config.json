@@ -1,0 +1,8 @@
+{
+  "dev": {
+    "loglevel": "debug"
+  },
+  "prod": {
+    "loglevel": "warn"
+  }
+}

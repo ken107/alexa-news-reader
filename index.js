@@ -1,9 +1,8 @@
 'use strict';
 
 var handlers = {};
-var state = {
-  topics: {}
-};
+var state = {};
+var cache = {};
 var positions = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth", "twentieth"];
 var positions2 = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th"];
 var topics = ["top stories", "world", "US", "elections", "business", "technology", "entertainment", "sports", "science", "health", "spotlight"];
@@ -22,8 +21,10 @@ var feeds = {
 };
 //https://news.google.com/news/feeds?cf=all&ned=us&hl=en&q=education&output=rss
 
+var config = require("./config.json")[process.env.envir || "prod"];
+
 var log = require("loglevel");
-log.setLevel(process.env.LOG_LEVEL || "warn");
+log.setLevel(config.loglevel);
 
 var AWS = require("aws-sdk");
 var s3 = new AWS.S3();
@@ -455,8 +456,6 @@ function getTopic(topicName, callback) {
   //if topic name is specified
   if (topicName) {
     topicName = topicName.toLowerCase();
-    //if topic not loaded
-    if (!state.topics[topicName]) {
       var key = "topic-" + topicName;
       //fetch from S3 cache
       readCache(key, entry => {
@@ -464,8 +463,8 @@ function getTopic(topicName, callback) {
         //if cache hits
         if (entry) {
           //return cache entry
-          state.topics[topicName] = JSON.parse(entry.Body.toString());
-          callback(state.topics[topicName]);
+          var topic = JSON.parse(entry.Body.toString());
+          callback(topic);
           //if cache entry had expired, refresh
           if (new Date().getTime() > Date.parse(entry.LastModified) + 5*60*1000) {
             if (feeds[topicName]) {
@@ -473,7 +472,6 @@ function getTopic(topicName, callback) {
                 if (content) {
                   var topic = parser.parseFeed(content);
                   topic.name = topicName;
-                  state.topics[topicName] = topic;
                   writeCache(key, JSON.stringify(topic));
                 }
               });
@@ -487,7 +485,6 @@ function getTopic(topicName, callback) {
               if (content) {
                 var topic = parser.parseFeed(content);
                 topic.name = topicName;
-                state.topics[topicName] = topic;
                 writeCache(key, JSON.stringify(topic));
                 callback(topic);
               }
@@ -497,9 +494,6 @@ function getTopic(topicName, callback) {
           else callback(null);
         }
       });
-    }
-    //if topic already loaded, return that
-    else callback(state.topics[topicName]);
   }
   //if topic name isn't specified, return the current topic (which may be null)
   else callback(state.topic);
@@ -512,31 +506,34 @@ function getArticle(articles, position, callback) {
   if (index == -1) index = positions2.indexOf(position);
   var article = articles[index];
   if (article) {
-    //if article content not loaded
-    if (!article.texts) {
       var key = "article-" + require('crypto').createHash('md5').update(article.link).digest("hex");
       //fetch from S3 cache
       readCache(key, entry => {
         log.debug("cache-entry", key, entry);
         //if cache hits, use cache entry
         if (entry) {
-          article.texts = JSON.parse(entry.Body.toString());
-          callback(article);
+          callback({
+            source: article.source,
+            title: article.title,
+            texts: JSON.parse(entry.Body.toString())
+          });
         }
         //if cache misses, load from source
         else {
           loadContent(article.link, content => {
+            var texts;
             if (content) {
-              article.texts = parser.parseArticle(content, article.link);
-              writeCache(key, JSON.stringify(article.texts), {created: String(new Date().getTime())});
+              texts = parser.parseArticle(content, article.link);
+              writeCache(key, JSON.stringify(texts));
             }
-            callback(article);
+            callback({
+              source: article.source,
+              title: article.title,
+              texts: texts
+            });
           });
         }
       });
-    }
-    //if article content already loaded, simply return
-    else callback(article);
   }
   else callback(null);
 }
@@ -567,6 +564,10 @@ function loadContent(link, callback) {
 
 function writeCache(key, body, metadata) {
   log.debug("writeCache", key);
+  cache[key] = {
+    Body: body,
+    LastModified: new Date().toISOString()
+  };
   s3.putObject({
     Bucket: "news-reader-article-cache",
     Key: key,
@@ -581,12 +582,17 @@ function writeCache(key, body, metadata) {
 
 function readCache(key, callback) {
   log.debug("readCache", key);
+  if (cache[key]) {
+    log.debug("local hit");
+    return cache[key];
+  }
   s3.getObject({
     Bucket: "news-reader-article-cache",
     Key: key
   },
   function(err, data) {
     if (err && err.code != 'NoSuchKey') console.error(err);
+    if (!cache[key] && data) cache[key] = data;
     callback(data);
   });
 }
