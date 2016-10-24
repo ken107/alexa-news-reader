@@ -1,10 +1,12 @@
 
-exports.write = function(key, body) {
+var cache = {};
+
+exports.write = function(key, data) {
   cache[key] = {
-    Body: body,
-    LastModified: new Date().toISOString()
+    data: data,
+    lastModified: new Date().getTime()
   };
-  return Promise.resolve(null);
+  return Promise.resolve();
 }
 
 exports.read = function(key) {

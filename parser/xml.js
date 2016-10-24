@@ -1,5 +1,7 @@
 
-module.exports = function(xml) {
-  var XMLParser = require("xmldom").DOMParser;
-  return new XMLParser().parseFromString(xml);
+var XMLParser = require("xmldom").DOMParser;
+var parser = new XMLParser();
+
+exports.parse = function(xml) {
+  return parser.parseFromString(xml);
 }
