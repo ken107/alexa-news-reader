@@ -1,10 +1,9 @@
 
-exports.parse = function(doc) {
-  return require("../../util/jquery.js").then($ => parse($, doc));
-}
+var cheerio = require("cheerio");
 
-function parse($, doc) {
-  var paragraphs = $(doc).find(".zn-body__paragraph").get();
+exports.parse = function(html) {
+  var $ = cheerio.load(html);
+  var paragraphs = $(".zn-body__paragraph").get();
   var texts = paragraphs.map(elem => $(elem).text().trim()).filter(text => text);
   return texts;
 }

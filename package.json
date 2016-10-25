@@ -26,10 +26,8 @@
   },
   "homepage": "https://github.com/ken107/alexa-news-reader#readme",
   "dependencies": {
-    "jquery": "^3.1.1",
-    "jsdom": "^9.8.0",
+    "cheerio": "^0.22.0",
     "loglevel": "^1.4.1",
-    "request": "^2.75.0",
-    "xmldom": "^0.1.22"
+    "request": "^2.75.0"
   }
 }

@@ -1,21 +1,16 @@
 
-exports.parse = function(doc) {
-  return require("../../util/jquery.js").then($ => parse($, doc));
-}
+var cheerio = require("cheerio");
 
-function parse($, doc) {
-  //only interested in these tags
+exports.parse = function(html) {
+  var $ = cheerio.load(html);
   var tags = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "blockquote"];
 
   //remove unwanted elems
-  $(doc).find("a > *").remove();
-  $(doc).find(tags.map(tag => tag + " > div").join(", ")).remove();
-
-  //enum text blocks
-  var textBlocks = $(doc).find("p").parent().get();
-  $.uniqueSort(textBlocks);
+  $("a > *").remove();
+  $(tags.map(tag => tag + " > div").join(", ")).remove();
 
   //find longest text block
+  var textBlocks = new Set($("p").parent().get());
   var longest = {length: 0};
   textBlocks.forEach(block => {
     var text = $(block).children(tags.join(", ")).text();
