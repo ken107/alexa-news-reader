@@ -1,14 +1,14 @@
 
 var cache = {};
 
-exports.write = function(key, data) {
+exports.write = function(key, data, lastModified) {
   cache[key] = {
     data: data,
-    lastModified: new Date().getTime()
+    lastModified: lastModified || new Date().getTime()
   };
-  return Promise.resolve();
 }
 
 exports.read = function(key) {
-  return Promise.resolve(cache[key]);
+  if (!cache[key]) throw new Error("NOT_FOUND");
+  return cache[key];
 }

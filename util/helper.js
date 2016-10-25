@@ -1,6 +1,6 @@
 
-exports.applyTo = function(f, self) {
+exports.spread = function(f, self) {
   return function(args) {
-    f.apply(self, args);
+    return f.apply(self, args);
   };
 };

@@ -27,6 +27,7 @@
   "homepage": "https://github.com/ken107/alexa-news-reader#readme",
   "dependencies": {
     "cheerio": "^0.22.0",
+    "extend": "^3.0.0",
     "loglevel": "^1.4.1",
     "request": "^2.75.0"
   }

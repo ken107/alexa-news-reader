@@ -1,9 +1,11 @@
 
-handlers.Launch = function(launchRequest, session, sendResponse) {
+var log = require("../util/log.js");
+
+exports.handle = function(req, ses) {
   log.debug("Launch");
-  sendResponse({
+  return {
     text: "Which topic would you like to read?",
     title: "Welcome",
     reprompt: "To hear the list of topics, say 'list topics'."
-  });
+  };
 };

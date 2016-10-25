@@ -28,7 +28,7 @@ exports.read = function(key) {
     },
     function(err, entry) {
       if (err) {
-        if (err.code == 'NoSuchKey') fulfill(undefined);
+        if (err.code == 'NoSuchKey') reject(new Error("NOT_FOUND"));
         else reject(err);
       }
       else {
