@@ -4,19 +4,17 @@ var tests = {};
 var ses = {};
 
 tests.scratch = function() {
-  new Promise(function(resolve, reject) {
-    resolve('Success');
-  }).then(function(value) {
-    console.log(value); // "Success!"
-    throw 'oh, no!';
-  }).catch(function(e) {
-    console.log(e); // "oh, no!"
-    return "HEllo";
-  }).then(function(value) {
-    console.log('after a catch the chain is restored', value);
-  }, function () {
-    console.log('Not fired due to the catch');
-  });
+  require("./index.js").handler({
+    request: {
+      type: "IntentRequest",
+      intent: {
+        name: "ListTopics"
+      }
+    },
+    session: {}
+  },
+  null,
+  (err, data) => console.log(err && err.stack || data));
 }
 
 tests.config = function() {

@@ -21,6 +21,6 @@
     "loglevel": "debug"
   },
   "prod": {
-    "loglevel": "warn"
+    "loglevel": "debug"
   }
 }

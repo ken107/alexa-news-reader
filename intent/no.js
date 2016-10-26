@@ -41,6 +41,6 @@ exports.handle = function(req, ses) {
       text: "Okay, Goodbye.",
       title: "Goodbye",
       shouldEndSession: true
-    });
+    }
   }
 };
