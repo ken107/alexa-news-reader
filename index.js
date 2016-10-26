@@ -42,10 +42,10 @@ exports.handler = function(event, context, callback) {
 function handle(request, session) {
   var req = unwrapRequest(request);
   var ses = unwrapSession(session);
-  log.debug("handle", req, ses);
+  log.info(req, ses);
 
   return Promise.resolve([req, ses])
-    .then(helper.spread(handlers[request.intent.name].handle))
+    .then(helper.spread(handlers[req.intent].handle))
     .catch(err => {
       log.error(err.stack);
       return getErrorResponse(err, ses);
@@ -57,7 +57,9 @@ function handle(request, session) {
 }
 
 function unwrapRequest(request) {
-  var req = {};
+  var req = {
+    intent: request.intent.name
+  };
   for (var name in request.intent.slots) {
     var slot = request.intent.slots[name];
     if (name == "topic") {
