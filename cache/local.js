@@ -15,5 +15,8 @@ exports.read = function(key) {
     log.debug("local cache hit");
     return Promise.resolve(cache[key]);
   }
-  else return Promise.reject(new Error("NOT_FOUND"));
+  else {
+    log.debug("local cache miss");
+    return Promise.reject(new Error("NOT_FOUND"));
+  }
 }

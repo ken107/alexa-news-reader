@@ -1,41 +1,29 @@
 
-var parsers = [
-  { matcher: /www\.cnn\.com$/i, parse: require("./article/cnn.js") },
-  { matcher: /./, parse: require("./article/default.js") }
-];
-var hostname = require("url").parse(link, true).hostname;
-return parsers.find(parser => parser.matcher.test(hostname)).parse(doc);
+var log = require("../util/log.js");
+var cache = require("../cache/combined.js");
 
-exports.load = function(link) {
-  log.debug("getArticle");
-  position = position.toLowerCase();
-  var index = positions.indexOf(position);
-  if (index == -1) index = positions2.indexOf(position);
-  var article = articles[index];
-  if (article) {
-    if (!article.texts) {
-      var key = "article-" + require('crypto').createHash('md5').update(article.link).digest("hex");
-      //fetch from S3 cache
-      readCache(key, entry => {
-        log.debug("cache-entry", key, entry);
-        //if cache hits, use cache entry
-        if (entry) {
-          article.texts = JSON.parse(entry.Body.toString());
-          callback(article);
-        }
-        //if cache misses, load from source
-        else {
-          loadContent(article.link, content => {
-            if (content) {
-              article.texts = parser.parseArticle(content, article.link);
-              writeCache(key, JSON.stringify(article.texts));
-            }
-            callback(article);
-          });
-        }
-      });
-    }
-    else callback(article);
-  }
-  else callback(null);
+var parsers = [
+  { matcher: /www\.cnn\.com$/i, parse: require("../parser/article/cnn.js").parse },
+  { matcher: /./, parse: require("../parser/article/default.js").parse }
+];
+
+exports.load = function(url) {
+  log.debug("article", "load", url);
+
+  var hash = require('crypto').createHash('md5').update(url).digest("hex");
+  var key = "article-" + hash;
+  return cache.read(key)
+    .then(entry => entry.data)
+    .catch(err => {
+      if (err.message == "NOT_FOUND") return loadFeed(url).then(texts => {cache.write(key, texts); return texts;});
+      else throw err;
+    });
+}
+
+function loadFeed(url) {
+  var hostname = require("url").parse(url, true).hostname;
+  var parser = parsers.find(parser => parser.matcher.test(hostname));
+  return Promise.resolve(url)
+    .then(require("../loader/http.js").load)
+    .then(parser.parse);
 }

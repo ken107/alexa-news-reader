@@ -16,10 +16,7 @@ exports.load = function(topicName) {
       return entry.data;
     })
     .catch(err => {
-      if (err.message == "NOT_FOUND") {
-        log.debug("cache miss");
-        return loadFeed(topicName).then(topic => {cache.write(key, topic); return topic;});
-      }
+      if (err.message == "NOT_FOUND") return loadFeed(topicName).then(topic => {cache.write(key, topic); return topic;});
       else throw err;
     })
     .then(topic => {

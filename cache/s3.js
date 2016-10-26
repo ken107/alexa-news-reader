@@ -28,7 +28,10 @@ exports.read = function(key) {
     },
     function(err, entry) {
       if (err) {
-        if (err.code == 'NoSuchKey') reject(new Error("NOT_FOUND"));
+        if (err.code == 'NoSuchKey') {
+          log.debug("s3 cache miss");
+          reject(new Error("NOT_FOUND"));
+        }
         else reject(err);
       }
       else {

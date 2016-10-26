@@ -1,28 +1,9 @@
 
 var helper = require("./util/helper.js");
+var tests = {};
+var ses = {};
 
-var tests = {
-  scratch: scratch,
-  config: config,
-  log: log,
-  localCache: localCache,
-  s3Cache: s3Cache,
-  httpLoader: httpLoader,
-  topicLoader: topicLoader,
-  articleLoader: articleLoader,
-  defaultArticleParser: defaultArticleParser,
-  cnnParser: cnnParser,
-  googleFeedParser: googleFeedParser,
-  launch: launch,
-  listTopics: listTopics,
-  listArticles: listArticles,
-  continueListing: continueListing
-};
-
-if (process.argv.length < 3) throw new Error("Need test name");
-tests[process.argv[2]].apply(null, process.argv.slice(3));
-
-function scratch() {
+tests.scratch = function() {
   new Promise(function(resolve, reject) {
     resolve('Success');
   }).then(function(value) {
@@ -38,84 +19,106 @@ function scratch() {
   });
 }
 
-function config() {
+tests.config = function() {
   Promise.resolve(require("./util/config.js"))
     .then(console.log);
 }
 
-function log() {
+tests.log = function() {
   var log = require("./util/log.js");
   log.debug("suppy");
   log.warn("what");
 }
 
-function localCache() {
+tests.localCache = function() {
   var cache = require("./cache/local.js");
   cache.write("test", {a: 1})
     .then(() => cache.read("test"))
     .then(console.log);
 }
 
-function s3Cache() {
+tests.s3Cache = function() {
   var cache = require("./cache/s3.js");
   cache.write("test", {a: 1})
     .then(() => cache.read("test"))
     .then(console.log);
 }
 
-function httpLoader() {
+tests.combinedCache = function() {
+  var cache = require("./cache/combined.js");
+  cache.read("test")
+    .then(console.log)
+    .catch(console.log);
+}
+
+tests.httpLoader = function() {
   Promise.resolve("http://esdiscuss.org/")
     .then(require("./loader/http.js").load)
     .then(console.log);
 }
 
-function topicLoader() {
+tests.topicLoader = function() {
   Promise.resolve("Technology")
     .then(require("./loader/topic.js").load)
     .then(console.log)
     .catch(err => console.log(err.stack));
 }
 
-function articleLoader() {
-
+tests.articleLoader = function() {
+  Promise.resolve("http://nypost.com/2016/10/25/woman-who-pushed-husband-out-of-high-rise-window-found-dead-in-prison/")
+    .then(require("./loader/article.js").load)
+    .then(console.log)
+    .catch(err => console.log(err.stack));
 }
 
-function defaultArticleParser() {
+tests.defaultArticleParser = function() {
   Promise.resolve("https://www.washingtonpost.com/news/worldviews/wp/2016/10/24/britains-first-white-lives-matter-rally-was-as-much-of-a-joke-as-it-sounds/")
     .then(require("./loader/http.js").load)
     .then(require("./parser/article/default.js").parse)
     .then(console.log);
 }
 
-function cnnParser() {
+tests.cnnParser = function() {
   Promise.resolve("http://www.cnn.com/2016/10/24/asia/japan-explosion-car-fire/index.html")
     .then(require("./loader/http.js").load)
     .then(require("./parser/article/cnn.js").parse)
     .then(console.log);
 }
 
-function googleFeedParser() {
+tests.googleFeedParser = function() {
   Promise.resolve("https://news.google.com/news?cf=all&hl=en&pz=1&ned=us&topic=el&output=rss")
     .then(require("./loader/http.js").load)
     .then(require("./parser/feed/google.js").parse)
     .then(feed => console.log(feed.articles[0]));
 }
 
-function launch() {
+tests.launch = function() {
   Promise.resolve()
     .then(require("./intent/launch.js").handle)
     .then(console.log);
 }
 
-function listTopics() {
+tests.listTopics = function() {
   Promise.resolve()
     .then(require("./intent/list_topics.js").handle)
     .then(console.log);
 }
 
-function listArticles() {
-  Promise.resolve([{topicName: "Technology"}, {topicName: "Business"}])
+tests.listArticles = function() {
+  return Promise.resolve([{topicName: "Technology"}, ses = {topicName: "Business"}])
     .then(helper.spread(require("./intent/list_articles.js").handle))
     .then(console.log)
     .catch(err => console.log(err.stack));
 }
+
+tests.continueListing = function() {
+  tests.listArticles()
+    .then(() => require("./intent/continue_listing.js").handle(null, ses))
+    .then(console.log);
+}
+
+
+
+
+if (process.argv.length < 3) throw new Error("Need test name");
+tests[process.argv[2]].apply(null, process.argv.slice(3));
