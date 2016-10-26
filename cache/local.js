@@ -1,4 +1,5 @@
 
+var log = require("../util/log.js");
 var cache = {};
 
 exports.write = function(key, data, lastModified) {
@@ -6,9 +7,13 @@ exports.write = function(key, data, lastModified) {
     data: data,
     lastModified: lastModified || new Date().getTime()
   };
+  return Promise.resolve();
 }
 
 exports.read = function(key) {
-  if (!cache[key]) throw new Error("NOT_FOUND");
-  return cache[key];
+  if (cache[key]) {
+    log.debug("local cache hit");
+    return Promise.resolve(cache[key]);
+  }
+  else return Promise.reject(new Error("NOT_FOUND"));
 }

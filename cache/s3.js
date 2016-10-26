@@ -32,6 +32,7 @@ exports.read = function(key) {
         else reject(err);
       }
       else {
+        log.debug("s3 cache hit");
         fulfill({
           data: JSON.parse(entry.Body.toString()),
           lastModified: Date.parse(entry.LastModified)
