@@ -2,7 +2,7 @@
 var log = require("../util/log.js");
 
 exports.handle = function(req, ses) {
-  log.debug("ContinueReading");
+  log.debug("ContinueReadingRelated");
 
   if (!ses.topicName) throw new Error("NO_TOPIC");
   if (ses.articleIndex == null) throw new Error("NO_ARTICLE");
@@ -11,7 +11,8 @@ exports.handle = function(req, ses) {
     .then(require("../loader/topic.js").load)
     .then(topic => {
       if (ses.articleIndex < 0 || ses.articleIndex >= topic.articles.length) throw new Error("BAD_ARTICLE_INDEX");
-      var article = topic.articles[ses.articleIndex];
+      if (ses.relatedIndex < 0 || ses.relatedIndex >= topic.articles[ses.articleIndex].relatedArticles.length) throw new Error("BAD_RELATED_INDEX");
+      var article = topic.articles[ses.articleIndex].relatedArticles[ses.relatedIndex];
       return Promise.resolve(article.link)
         .then(require("../loader/article.js").load)
         .then(texts => readNext(article, texts, ses));
@@ -25,7 +26,7 @@ function readNext(article, texts, ses) {
 
   if (i < texts.length) {
     ses.toRead = i;
-    ses.yesIntent = "ContinueReading";
+    ses.yesIntent = "ContinueReadingRelated";
     return {
       text: `${text}Continue?`,
       title: article.title,
@@ -37,7 +38,7 @@ function readNext(article, texts, ses) {
     return {
       text: `${text}Would you like me to read the next article?`,
       title: article.title,
-      reprompt: "You can also say 'related articles' to list articles related to the one you just heard."
+      reprompt: "You can also say 'list articles'."
     }
   }
 }

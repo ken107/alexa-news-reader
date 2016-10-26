@@ -1,10 +1,11 @@
 
-handlers['AMAZON.StopIntent'] =
-handlers['AMAZON.CancelIntent'] = function(intentRequest, session, sendResponse) {
+var log = require("../util/log.js");
+
+exports.handle = function(req, ses) {
   log.debug("StopIntent");
-  sendResponse({
+  return {
     text: "Goodbye.",
     title: "Goodbye",
     shouldEndSession: true
-  });
+  }
 };

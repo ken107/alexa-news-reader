@@ -1,28 +1,32 @@
 
-handlers.ListRelatedArticles = function(intentRequest, session, sendResponse) {
+var config = require("../util/config.js");
+var log = require("../util/log.js");
+
+exports.handle = function(req, ses) {
   log.debug("ListRelatedArticles");
-  if (state.article) {
-    if (state.article.relatedArticles.length) {
-      sendResponse({
-        text: state.article.relatedArticles.map((article, index) => `${positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich related article would you like to read?",
-        title: 'Related Articles',
-        reprompt: "You can say 'read the first related article'."
-      });
-    }
-    else {
-      state.yesIntent = "NextArticle";
-      sendResponse({
-        text: "No related articles found, should I read the next article?",
-        title: "No related articles",
-        reprompt: "Should I read the next article?"
-      })
+
+  if (!ses.topicName) throw "NO_TOPIC";
+  if (ses.articleIndex == null) throw "NO_ARTICLE";
+
+  return Promise.resolve(ses.topicName)
+    .then(require("../loader/topic.js").load)
+    .then(topic => list(topic.articles[ses.articleIndex].relatedArticles));
+}
+
+function list(articles) {
+  if (articles.length) {
+    return {
+      text: articles.map((article, index) => `${config.positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich related article would you like to read?",
+      title: 'Related articles',
+      reprompt: "You can say 'read the first related article'."
     }
   }
   else {
-    sendResponse({
-      text: "You haven't read anything yet. To read an article about a topic, say 'read the first article about Science'.",
-      title: 'No related articles',
-      reprompt: "To list articles about a topic, say 'list articles about Science'."
-    })
+    state.yesIntent = "NextArticle";
+    return {
+      text: "No related articles found. Should I go to the next article?",
+      title: "No related articles",
+      reprompt: "Please tell me which article you'd like to read."
+    }
   }
-};
+}

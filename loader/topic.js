@@ -11,7 +11,10 @@ exports.load = function(topicName) {
     .then(entry => {
       if (new Date().getTime() > entry.lastModified + 5*60*1000) {
         log.debug("cache entry expired");
-        loadFeed(topicName).then(topic => cache.write(key, topic));
+        if (!entry.refreshing) {
+          entry.refreshing = true;
+          loadFeed(topicName).then(topic => cache.write(key, topic));
+        }
       }
       return entry.data;
     })

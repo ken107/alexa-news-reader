@@ -17,7 +17,7 @@ exports.read = function(key) {
         return Promise.resolve(key)
           .then(s3Cache.read)
           .then(entry => {
-            localCache.write(key, entry.data, entry.lastModified);
+            localCache.writeEntry(key, entry);
             return entry;
           });
       }

@@ -117,6 +117,65 @@ tests.continueListing = function() {
     .then(console.log);
 }
 
+tests.readArticle = function() {
+  return Promise.resolve([{topicName: "Technology", articleIndex: 1}, ses = {topicName: "Top Stories"}])
+    .then(helper.spread(require("./intent/read_article.js").handle))
+    .then(console.log)
+    .catch(err => console.log(err.stack));
+}
+
+tests.continueReading = function() {
+  return tests.readArticle()
+    .then(() => require("./intent/continue_reading.js").handle(null, ses))
+    .then(console.log);
+}
+
+tests.nextArticle = function() {
+  return Promise.resolve([{}, ses = {topicName: "Technology", articleIndex: 1}])
+    .then(helper.spread(require("./intent/next_article.js").handle))
+    .then(console.log)
+    .catch(console.log);
+}
+
+tests.previousArticle = function() {
+  return Promise.resolve([{}, ses = {topicName: "Technology", articleIndex: 1}])
+    .then(helper.spread(require("./intent/previous_article.js").handle))
+    .then(console.log)
+    .catch(console.log);
+}
+
+tests.listRelatedArticles = function() {
+  return Promise.resolve([{}, ses = {topicName: "Technology", articleIndex: 0}])
+    .then(helper.spread(require("./intent/list_related_articles.js").handle))
+    .then(console.log)
+    .catch(console.log);
+}
+
+tests.readRelatedArticle = function() {
+  return Promise.resolve([{articleIndex: 1}, ses = {topicName: "Technology", articleIndex: 0}])
+    .then(helper.spread(require("./intent/read_related_article.js").handle))
+    .then(console.log)
+    .catch(console.log);
+}
+
+tests.continueReadingRelated = function() {
+  return tests.readRelatedArticle()
+    .then(() => require("./intent/continue_reading_related.js").handle(null, ses))
+    .then(console.log);
+}
+
+tests.nextRelatedArticle = function() {
+  return Promise.resolve([{}, ses = {topicName: "Technology", articleIndex: 0, relatedIndex: 1}])
+    .then(helper.spread(require("./intent/next_related_article.js").handle))
+    .then(console.log)
+    .catch(console.log);
+}
+
+tests.stop = function() {
+  return Promise.resolve()
+    .then(require("./intent/stop.js").handle)
+    .then(console.log);
+}
 
 
 

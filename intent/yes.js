@@ -1,30 +1,20 @@
 
-handlers['AMAZON.YesIntent'] = function(intentRequest, session, sendResponse) {
+var log = require("../util/log.js");
+
+exports.handle = function(req, ses) {
   log.debug("YesIntent");
-  if (state.yesIntent == "ContinueListing") {
-    this.ContinueListing(intentRequest, session, sendResponse);
-  }
-  else if (state.yesIntent == "NextArticle") {
-    this.NextArticle(intentRequest, session, sendResponse);
-  }
-  else if (state.yesIntent == "ContinueReading") {
-    this.ContinueReading(intentRequest, session, sendResponse);
-  }
-  else if (state.yesIntent == "NextRelatedArticle") {
-    this.NextRelatedArticle(intentRequest, session, sendResponse);
-  }
-  else if (state.yesIntent == "TopStories") {
-    this.ListArticles(makeIntentRequest({topic: {value: "Top Stories"}}), session, sendResponse);
-  }
-  else if (state.yesIntent == "HangOut") {
-    this.HangOut(intentRequest, session, sendResponse);
-  }
+
+  if (ses.yesIntent == "ContinueListing") return require("./continue_listing.js").handle(req, ses);
+  else if (ses.yesIntent == "ContinueReading") return require("./continue_reading.js").handle(req, ses);
+  else if (ses.yesIntent == "NextArticle") return require("./next_article.js").handle(req, ses);
+  else if (ses.yesIntent == "NextRelatedArticle") return require("./next_related_article.js").handle(req, ses);
+  else if (ses.yesIntent == "TopStories") return require("./list_articles.js").handle({topicName: "Top Stories"}, ses);
   else {
-    state.yesIntent = "TopStories";
-    sendResponse({
+    ses.yesIntent = "TopStories";
+    return {
       text: "I'm not sure what you mean. Would you like to hear the top news stories?",
       title: "What do you mean?",
       reprompt: "To hear the list of topics, say 'list topics'."
-    });
+    }
   }
 };

@@ -1,16 +1,24 @@
 
-handlers.NextRelatedArticle = function(intentRequest, session, sendResponse) {
+var log = require("../util/log.js");
+var helper = require("../util/helper.js");
+
+exports.handle = function(req, ses) {
   log.debug("NextRelatedArticle");
-  var index = state.article.relatedArticles.indexOf(state.relatedArticle) + 1;
-  if (index < state.article.relatedArticles.length) {
-    this.ReadRelatedArticle(makeIntentRequest({position: {value: positions[index]}}), session, sendResponse);
-  }
-  else {
-    state.yesIntent = "NextArticle";
-    sendResponse({
-      text: `There are no more related articles. Would you like to read the next article from ${state.topic.name}?`,
-      title: "No more related articles",
-      reprompt: "To list all articles about the topic, say 'list all articles'."
+
+  if (!ses.topicName) throw new Error("NO_TOPIC");
+  if (ses.articleIndex == null) throw new Error("NO_ARTICLE");
+  if (ses.relatedIndex == null) ses.relatedIndex = -1;
+
+  return Promise.resolve(ses.topicName)
+    .then(require("../loader/topic.js").load)
+    .then(topic => {
+      var index = ses.relatedIndex + 1;
+      if (index >= 0 && index < topic.articles[ses.articleIndex].relatedArticles.length) {
+        return Promise.resolve([{articleIndex: index}, ses])
+          .then(helper.spread(require("./read_related_article.js").handle))
+      }
+      else {
+        return Promise.reject(new Error("NO_MORE_RELATED"));
+      }
     });
-  }
-};
+}
