@@ -1,17 +1,42 @@
 
+var helper = require("./util/helper.js");
+
 var tests = {
+  scratch: scratch,
   config: config,
   log: log,
   localCache: localCache,
   s3Cache: s3Cache,
   httpLoader: httpLoader,
+  topicLoader: topicLoader,
+  articleLoader: articleLoader,
   defaultArticleParser: defaultArticleParser,
   cnnParser: cnnParser,
-  googleFeedParser: googleFeedParser
+  googleFeedParser: googleFeedParser,
+  launch: launch,
+  listTopics: listTopics,
+  listArticles: listArticles,
+  continueListing: continueListing
 };
 
 if (process.argv.length < 3) throw new Error("Need test name");
 tests[process.argv[2]].apply(null, process.argv.slice(3));
+
+function scratch() {
+  new Promise(function(resolve, reject) {
+    resolve('Success');
+  }).then(function(value) {
+    console.log(value); // "Success!"
+    throw 'oh, no!';
+  }).catch(function(e) {
+    console.log(e); // "oh, no!"
+    return "HEllo";
+  }).then(function(value) {
+    console.log('after a catch the chain is restored', value);
+  }, function () {
+    console.log('Not fired due to the catch');
+  });
+}
 
 function config() {
   Promise.resolve(require("./util/config.js"))
@@ -44,6 +69,17 @@ function httpLoader() {
     .then(console.log);
 }
 
+function topicLoader() {
+  Promise.resolve("Technology")
+    .then(require("./loader/topic.js").load)
+    .then(console.log)
+    .catch(err => console.log(err.stack));
+}
+
+function articleLoader() {
+
+}
+
 function defaultArticleParser() {
   Promise.resolve("https://www.washingtonpost.com/news/worldviews/wp/2016/10/24/britains-first-white-lives-matter-rally-was-as-much-of-a-joke-as-it-sounds/")
     .then(require("./loader/http.js").load)
@@ -63,4 +99,23 @@ function googleFeedParser() {
     .then(require("./loader/http.js").load)
     .then(require("./parser/feed/google.js").parse)
     .then(feed => console.log(feed.articles[0]));
+}
+
+function launch() {
+  Promise.resolve()
+    .then(require("./intent/launch.js").handle)
+    .then(console.log);
+}
+
+function listTopics() {
+  Promise.resolve()
+    .then(require("./intent/list_topics.js").handle)
+    .then(console.log);
+}
+
+function listArticles() {
+  Promise.resolve([{topicName: "Technology"}, {topicName: "Business"}])
+    .then(helper.spread(require("./intent/list_articles.js").handle))
+    .then(console.log)
+    .catch(err => console.log(err.stack));
 }

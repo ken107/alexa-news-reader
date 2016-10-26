@@ -1,22 +1,12 @@
 
-handlers.ListArticles = function(intentRequest, session, sendResponse) {
+var log = require("../util/log.js");
+
+exports.handle = function(req, ses) {
   log.debug("ListArticles");
-  getTopic(intentRequest.intent.slots.topic.value, topic => {
-    if (topic) {
-      state.topic = topic;
-      state.toList = {
-        topicName: topic.name,
-        heads: [`In ${topic.name}.`],
-        texts: topic.articles.map((article, index) => `${positions[index]} article.\nFrom ${article.source}.\n${article.title}.`)
-      };
-      this.ContinueListing(intentRequest, session, sendResponse);
-    }
-    else {
-      sendResponse({
-        text: "Which topic?",
-        title: "No topic",
-        reprompt: "To hear the list of topics, say 'list topics'."
-      });
-    }
-  });
+
+  if (req.topicName) ses.topicName = req.topicName;
+  if (!ses.topicName) throw new Error("NO_TOPIC");
+  ses.toList = 0;
+
+  return require("./continue_listing.js").handle(req, ses);
 };
