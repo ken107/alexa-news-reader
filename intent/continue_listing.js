@@ -15,7 +15,7 @@ exports.handle = function(req, ses) {
 function listNext(topic, ses) {
   var start = ses.toList;
   var end = Math.min(start+3, topic.articles.length);
-  var text = start == 0 ? `In ${topic.name}\n\n` : "";
+  var text = start == 0 ? `In topic ${topic.name}\n\n` : "";
   for (var i=start; i<end; i++) {
     var position = config.positions[i];
     var article = topic.articles[i];
@@ -26,14 +26,14 @@ function listNext(topic, ses) {
     ses.toList = end;
     ses.yesIntent = "ContinueListing";
     return {
-      title: `In ${topic.name}`,
+      title: topic.name,
       text: `${text}Continue?`,
       reprompt: "Or you can say 'read the first article'."
     };
   }
   else {
     return {
-      title: `In ${topic.name}`,
+      title: topic.name,
       text: `${text}Which article would you like to read?`,
       reprompt: "You can say 'read the first article'."
     };

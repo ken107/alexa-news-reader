@@ -103,7 +103,7 @@ tests.listTopics = function() {
 }
 
 tests.listArticles = function() {
-  return Promise.resolve([{topicName: "Technology"}, ses = {topicName: "Business"}])
+  return Promise.resolve([{topicName: "Kim Kardashian"}, ses = {topicName: "Business"}])
     .then(helper.spread(require("./intent/list_articles.js").handle))
     .then(console.log)
     .catch(err => console.log(err.stack));

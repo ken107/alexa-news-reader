@@ -5,8 +5,8 @@ var log = require("../util/log.js");
 exports.handle = function(req, ses) {
   log.debug("ListRelatedArticles");
 
-  if (!ses.topicName) throw "NO_TOPIC";
-  if (ses.articleIndex == null) throw "NO_ARTICLE";
+  if (!ses.topicName) throw new Error("NO_TOPIC");
+  if (ses.articleIndex == null) throw new Error("NO_ARTICLE");
 
   return Promise.resolve(ses.topicName)
     .then(require("../loader/topic.js").load)

@@ -30,7 +30,7 @@ exports.load = function(topicName) {
 
 function loadFeed(topicName) {
   var url = config.feeds[topicName.toLowerCase()];
-  if (!url) throw new Error("NO_FEED");
+  if (!url) url = config.feeds.$$.replace("${topic}", encodeURIComponent(topicName));
 
   return Promise.resolve(url)
     .then(require("../loader/http.js").load)
