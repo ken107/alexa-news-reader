@@ -30,5 +30,4 @@ ListRelatedArticles read me the related articles
 ReadRelatedArticle {position} related article
 ReadRelatedArticle read the {position} related article
 
-PreviousArticle previous article
-NextArticle next article
+AMAZON.YesIntent continue

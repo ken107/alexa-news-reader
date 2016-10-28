@@ -22,5 +22,5 @@ exports.parse = function(html) {
     var elems = $(longest.block).children(tags.join(", ")).get();
     return elems.map(elem => $(elem).text().trim()).filter(text => text);
   }
-  else throw new Error("No text content");
+  else throw new Error("NO_CONTENT");
 }

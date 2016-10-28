@@ -11,10 +11,7 @@ var handlers = {
   ListArticles: require("./intent/list_articles.js"),
   ListRelatedArticles: require("./intent/list_related_articles.js"),
   ListTopics: require("./intent/list_topics.js"),
-  NextArticle: require("./intent/next_article.js"),
-  NextRelatedArticle: require("./intent/next_related_article.js"),
   "AMAZON.NoIntent": require("./intent/no.js"),
-  PreviousArticle: require("./intent/previous_article.js"),
   ReadArticle: require("./intent/read_article.js"),
   ReadRelatedArticle: require("./intent/read_related_article.js"),
   "AMAZON.StopIntent": require("./intent/stop.js"),
@@ -66,8 +63,11 @@ function unwrapRequest(request) {
       req.topicName = slot.value;
     }
     else if (name == "position") {
-      req.articleIndex = config.positions.indexOf(slot.value);
-      if (req.articleIndex == -1) req.articleIndex = config.positions2.indexOf(slot.value);
+      if (slot.value == "next" || slot.value == "previous") req.articleIndex = slot.value;
+      else {
+        req.articleIndex = config.positions.indexOf(slot.value);
+        if (req.articleIndex == -1) req.articleIndex = config.positions2.indexOf(slot.value);
+      }
     }
   }
   return req;
@@ -128,11 +128,11 @@ function getErrorResponse(err, ses) {
         title: "Invalid choice",
         reprompt: "You can say 'read me the first article'."
       };
-    case "BAD_ARTICLE":
-      state.yesIntent = "NextRelatedArticle";
+    case "NO_CONTENT":
+      ses.yesIntent = "NextRelatedArticle";
       return {
-        text: "An error occurred while loading this article, should I read you a related article?",
-        title: "Error loading article",
+        text: "This article has no text content, would you like to hear a related article?",
+        title: "No content",
         reprompt: "You can also say 'read me the first related article'."
       };
     case "NO_MORE_ARTICLES":
@@ -152,6 +152,12 @@ function getErrorResponse(err, ses) {
         text: "You made an invalid choice. Which related article would you like me to read?",
         title: "Invalid choice",
         reprompt: "You can also say 'list related articles'."
+      };
+    case "NO_RELATED":
+      return {
+        text: `There are no related articles. Would you like to read the next article in ${ses.topicName}?`,
+        title: "No related articles",
+        reprompt: "Which article would you like to read?"
       };
     default:
       return {

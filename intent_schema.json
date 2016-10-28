@@ -38,15 +38,6 @@
       ]
     },
     {
-      "intent": "PreviousArticle"
-    },
-    {
-      "intent": "NextArticle"
-    },
-    {
-      "intent": "PreviousSentence"
-    },
-    {
       "intent": "AMAZON.YesIntent"
     },
     {

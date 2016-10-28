@@ -6,15 +6,21 @@ exports.handle = function(req, ses) {
 
   if (!ses.topicName) throw new Error("NO_TOPIC");
   if (ses.articleIndex == null) throw new Error("NO_ARTICLE");
+  if (ses.relatedIndex == null) throw new Error("BAD_RELATED_INDEX");
 
   return Promise.resolve(ses.topicName)
     .then(require("../loader/topic.js").load)
     .then(topic => {
-      if (ses.articleIndex < 0 || ses.articleIndex >= topic.articles.length) throw new Error("BAD_ARTICLE_INDEX");
-      if (ses.relatedIndex < 0 || ses.relatedIndex >= topic.articles[ses.articleIndex].relatedArticles.length) throw new Error("BAD_RELATED_INDEX");
-      var article = topic.articles[ses.articleIndex].relatedArticles[ses.relatedIndex];
-      return Promise.resolve(article.link)
-        .then(require("../loader/article.js").load)
+      if (ses.articleIndex >= topic.articles.length) throw new Error("BAD_ARTICLE_INDEX");
+      else {
+        var relatedArticles = topic.articles[ses.articleIndex].relatedArticles;
+        if (relatedArticles.length == 0) throw new Error("NO_RELATED");
+        else if (ses.relatedIndex >= relatedArticles.length) throw new Error("NO_MORE_RELATED");
+        else return relatedArticles[ses.relatedIndex];
+      }
+    })
+    .then(article => {
+      return require("../loader/article.js").load(article.link)
         .then(texts => readNext(article, texts, ses));
     });
 };

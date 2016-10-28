@@ -6,8 +6,8 @@ exports.handle = function(req, ses) {
 
   if (ses.yesIntent == "ContinueListing") return require("./continue_listing.js").handle(req, ses);
   else if (ses.yesIntent == "ContinueReading") return require("./continue_reading.js").handle(req, ses);
-  else if (ses.yesIntent == "NextArticle") return require("./next_article.js").handle(req, ses);
-  else if (ses.yesIntent == "NextRelatedArticle") return require("./next_related_article.js").handle(req, ses);
+  else if (ses.yesIntent == "NextArticle") return require("./read_article.js").handle({articleIndex: "next"}, ses);
+  else if (ses.yesIntent == "NextRelatedArticle") return require("./read_related_article.js").handle({articleIndex: "next"}, ses);
   else if (ses.yesIntent == "TopStories") return require("./list_articles.js").handle({topicName: "Top Stories"}, ses);
   else {
     ses.yesIntent = "TopStories";

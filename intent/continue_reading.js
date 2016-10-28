@@ -7,13 +7,13 @@ exports.handle = function(req, ses) {
   if (!ses.topicName) throw new Error("NO_TOPIC");
   if (ses.articleIndex == null) throw new Error("NO_ARTICLE");
 
-  return Promise.resolve(ses.topicName)
-    .then(require("../loader/topic.js").load)
+  return require("../loader/topic.js").load(ses.topicName)
     .then(topic => {
-      if (ses.articleIndex < 0 || ses.articleIndex >= topic.articles.length) throw new Error("BAD_ARTICLE_INDEX");
-      var article = topic.articles[ses.articleIndex];
-      return Promise.resolve(article.link)
-        .then(require("../loader/article.js").load)
+      if (ses.articleIndex >= topic.articles.length) throw new Error("NO_MORE_ARTICLES");
+      else return topic.articles[ses.articleIndex];
+    })
+    .then(article => {
+      return require("../loader/article.js").load(article.link)
         .then(texts => readNext(article, texts, ses));
     });
 };
