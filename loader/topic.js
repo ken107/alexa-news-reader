@@ -2,8 +2,18 @@
 var config = require("../util/config.js");
 var log = require("../util/log.js");
 var cache = require("../cache/combined.js");
+var pending = {};
 
 exports.load = function(topicName) {
+  if (pending[topicName]) return pending[topicName];
+  return pending[topicName] = load(topicName)
+    .then(result => {
+      delete pending[topicName];
+      return result;
+    })
+}
+
+function load(topicName) {
   log.debug("topic", "load", topicName);
 
   var key = "topic-" + topicName.toLowerCase();
@@ -11,10 +21,7 @@ exports.load = function(topicName) {
     .then(entry => {
       if (new Date().getTime() > entry.lastModified + 5*60*1000) {
         log.debug("cache entry expired");
-        if (!entry.refreshing) {
-          entry.refreshing = true;
-          loadFeed(topicName).then(topic => cache.write(key, topic));
-        }
+        throw new Error("NOT_FOUND");
       }
       return entry.data;
     })

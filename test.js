@@ -4,17 +4,8 @@ var tests = {};
 var ses = {};
 
 tests.scratch = function() {
-  require("./index.js").handler({
-    request: {
-      type: "IntentRequest",
-      intent: {
-        name: "ListTopics"
-      }
-    },
-    session: {}
-  },
-  null,
-  (err, data) => console.log(err && err.stack || data));
+  tests.topicLoader();
+  tests.topicLoader();
 }
 
 tests.config = function() {

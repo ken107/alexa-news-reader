@@ -1,6 +1,7 @@
 
 var log = require("../util/log.js");
 var cache = require("../cache/combined.js");
+var pending = {};
 
 var parsers = [
   { matcher: /www\.cnn\.com$/i, parse: require("../parser/article/cnn.js").parse },
@@ -8,6 +9,15 @@ var parsers = [
 ];
 
 exports.load = function(url) {
+  if (pending[url]) return pending[url];
+  return pending[url] = load(url)
+    .then(result => {
+      delete pending[url];
+      return result;
+    })
+}
+
+function load(url) {
   log.debug("article", "load", url);
 
   var hash = require('crypto').createHash('md5').update(url).digest("hex");
