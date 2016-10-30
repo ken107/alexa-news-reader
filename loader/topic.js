@@ -19,7 +19,7 @@ function load(topicName) {
   var key = "topic-" + topicName.toLowerCase();
   return cache.read(key)
     .then(entry => {
-      if (new Date().getTime() > entry.lastModified + 5*60*1000) {
+      if (new Date().getTime() > entry.lastModified + 15*60*1000) {
         log.debug("cache entry expired");
         throw new Error("NOT_FOUND");
       }
