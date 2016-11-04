@@ -6,15 +6,17 @@ exports.handle = function(req, ses) {
 
   if (ses.yesIntent == "ContinueListing") return require("./continue_listing.js").handle(req, ses);
   else if (ses.yesIntent == "ContinueReading") return require("./continue_reading.js").handle(req, ses);
+  else if (ses.yesIntent == "ContinueReadingRelated") return require("./continue_reading_related.js").handle(req, ses);
   else if (ses.yesIntent == "NextArticle") return require("./read_article.js").handle({articleIndex: "next"}, ses);
   else if (ses.yesIntent == "NextRelatedArticle") return require("./read_related_article.js").handle({articleIndex: "next"}, ses);
-  else if (ses.yesIntent == "TopStories") return require("./list_articles.js").handle({topicName: "Top Stories"}, ses);
+  else if (ses.yesIntent == "ListTopics") return require("./list_topics.js").handle(req, ses);
+  else if (ses.yesIntent == "ListArticles") return require("./list_articles.js").handle(req, ses);
+  else if (ses.yesIntent == "ListRelatedArticles") return require("./list_related_articles.js").handle(req, ses);
   else {
-    ses.yesIntent = "TopStories";
     return {
-      text: "I'm not sure what you mean. Would you like to hear the top news stories?",
+      text: "I'm not sure what you mean. You can ask for help at any time by saying 'help me'.",
       title: "What do you mean?",
-      reprompt: "To hear the list of topics, say 'list topics'."
+      reprompt: "Say 'help me' to get help with the current interaction."
     }
   }
 };

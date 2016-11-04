@@ -16,6 +16,7 @@ var handlers = {
   ReadRelatedArticle: require("./intent/read_related_article.js"),
   "AMAZON.StopIntent": require("./intent/stop.js"),
   "AMAZON.CancelIntent": require("./intent/stop.js"),
+  "AMAZON.HelpIntent": require("./intent/help.js"),
   "AMAZON.YesIntent": require("./intent/yes.js")
 };
 //https://news.google.com/news/feeds?cf=all&ned=us&hl=en&q=education&output=rss

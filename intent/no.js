@@ -20,7 +20,7 @@ exports.handle = function(req, ses) {
       reprompt: "You can say 'read the first article about Health'"
     }
   }
-  else if (ses.yesIntent == "ContinueReading") {
+  else if (ses.yesIntent == "ContinueReading" || ses.yesIntent == "ContinueReadingRelated") {
     ses.yesIntent = "NextArticle";
     return {
       text: "Would you like me to read the next article?",
@@ -34,6 +34,22 @@ exports.handle = function(req, ses) {
       text: `Would you like me to read the next article from ${ses.topicName}?`,
       title: "Next article?",
       reprompt: `You can choose another topic by saying 'read me Technology news'`
+    }
+  }
+  else if (ses.yesIntent == "ListTopics") {
+    ses.yesIntent = "PickTopic";
+    return {
+      text: "Please tell me which topic you'd like to read.",
+      title: "Pick topic",
+      reprompt: "To get help, say 'help me'."
+    }
+  }
+  else if (ses.yesIntent == "ListArticles" || ses.yesIntent == "ListRelatedArticles") {
+    ses.yesIntent = "PickArticle";
+    return {
+      text: "Please tell me which article you'd like to read.",
+      title: "Pick article",
+      reprompt: "To get help. say 'help me'."
     }
   }
   else {

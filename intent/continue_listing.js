@@ -32,6 +32,7 @@ function listNext(topic, ses) {
     };
   }
   else {
+    ses.yesIntent = "PickArticle";
     return {
       title: topic.name,
       text: `${text}Which article would you like to read?`,

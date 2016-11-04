@@ -3,6 +3,8 @@ var log = require("../util/log.js");
 
 exports.handle = function(req, ses) {
   log.debug("Launch");
+
+  ses.yesIntent = "PickTopic";
   return {
     text: "Which topic would you like to read?",
     title: "Welcome",

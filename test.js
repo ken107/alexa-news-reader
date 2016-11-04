@@ -82,9 +82,10 @@ tests.googleFeedParser = function() {
 }
 
 tests.launch = function() {
-  Promise.resolve()
-    .then(require("./intent/launch.js").handle)
-    .then(console.log);
+  Promise.resolve([{}, {}])
+    .then(helper.spread(require("./intent/launch.js").handle))
+    .then(console.log)
+    .catch(console.log);
 }
 
 tests.listTopics = function() {
@@ -163,6 +164,12 @@ tests.nextRelatedArticle = function() {
 tests.stop = function() {
   return Promise.resolve()
     .then(require("./intent/stop.js").handle)
+    .then(console.log);
+}
+
+tests.help = function() {
+  return Promise.resolve([{}, {yesIntent: "PickTopic"}])
+    .then(helper.spread(require("./intent/help.js").handle))
     .then(console.log);
 }
 

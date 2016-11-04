@@ -10,11 +10,12 @@ exports.handle = function(req, ses) {
 
   return Promise.resolve(ses.topicName)
     .then(require("../loader/topic.js").load)
-    .then(topic => list(topic.articles[ses.articleIndex].relatedArticles));
+    .then(topic => list(topic.articles[ses.articleIndex].relatedArticles, ses));
 }
 
-function list(articles) {
+function list(articles, ses) {
   if (articles.length) {
+    ses.yesIntent = "PickRelatedArticle";
     return {
       text: articles.map((article, index) => `${config.positions[index]} related article.\nFrom ${article.source}.\n${article.title}.`).join("\n\n") + "\n\nWhich related article would you like to read?",
       title: 'Related articles',
@@ -22,7 +23,7 @@ function list(articles) {
     }
   }
   else {
-    state.yesIntent = "NextArticle";
+    ses.yesIntent = "NextArticle";
     return {
       text: "No related articles found. Should I go to the next article?",
       title: "No related articles",
