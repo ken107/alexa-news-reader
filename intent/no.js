@@ -5,7 +5,7 @@ exports.handle = function(req, ses) {
   log.debug("NoIntent");
 
   if (ses.yesIntent == "ContinueListing") {
-    ses.yesIntent = null;
+    ses.yesIntent = "PickArticle";
     return {
       text: "Please tell me which article you'd like to read.",
       title: "Choose article",
@@ -13,7 +13,7 @@ exports.handle = function(req, ses) {
     }
   }
   else if (ses.yesIntent == "NextArticle") {
-    ses.yesIntent = null;
+    ses.yesIntent = "PickArticle";
     return {
       text: "Please tell me which article you'd like to read.",
       title: "Choose article",
