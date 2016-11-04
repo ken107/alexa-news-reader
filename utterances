@@ -31,3 +31,4 @@ ReadRelatedArticle {position} related article
 ReadRelatedArticle read the {position} related article
 
 AMAZON.YesIntent continue
+AMAZON.HelpIntent help
