@@ -15,9 +15,9 @@ exports.handle = function(req, ses) {
   else if (ses.yesIntent == "NextArticle") {
     ses.yesIntent = "ListArticles";
     return {
-      text: "To pick a different article, say 'list articles'. You can also pick another topic at any time by saying, for example, 'read me Business news'. To hear the list of available topics, say 'list topics'.",
+      text: "To pick another article from the current topic, say 'list articles'. You can also pick another topic at any time by saying, for example, 'read me Business news'.",
       title: "Choose article",
-      reprompt: "What would you like to do?"
+      reprompt: "To hear the list of available topics, say 'list topics'."
     }
   }
   else if (ses.yesIntent == "ContinueReading" || ses.yesIntent == "ContinueReadingRelated") {
