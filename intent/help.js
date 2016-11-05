@@ -20,7 +20,7 @@ exports.handle = function(req, ses) {
   }
   else if (ses.yesIntent == "NextArticle") {
     return {
-      text: "Say 'yes' to read the next article in this topic. Or you can say 'list articles' to pick another article to read.",
+      text: "You have finished reading an article. Say 'yes' to read the next article in this topic, 'no' to go back. You can also say 'related articles' to hear articles related to the one you just heard.",
       title: "Help",
       reprompt: "Should I read the next article?"
     }
@@ -41,7 +41,7 @@ exports.handle = function(req, ses) {
   }
   else if (ses.yesIntent == "PickRelatedArticle") {
     return {
-      text: "A related article is an article about the same subject as the one you just heard, but from a different news outlet. You can say 'read the first related article'. Or say 'list related articles'.",
+      text: "You can say 'read me the first related article'.",
       title: "Help",
       reprompt: `To go back and read the next article in topic ${ses.topicName}, say 'read the next article'.`
     }

@@ -42,7 +42,7 @@ function readNext(article, texts, ses) {
   else {
     ses.yesIntent = "NextArticle";
     return {
-      text: `${text}Would you like me to read the next article?`,
+      text: `${text}Would you like to read the next article?`,
       title: article.title,
       reprompt: "You can also say 'list articles'."
     }
