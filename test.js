@@ -60,6 +60,14 @@ tests.articleLoader = function() {
     .catch(err => console.log(err.stack));
 }
 
+tests.forbesLoader = function() {
+  require("request").debug = true;
+  Promise.resolve("http://www.forbes.com/sites/currentevents/2016/11/02/is-the-world-too-prosperous/#33c812d978fb")
+    .then(require("./loader/article/forbes.js").load)
+    .then(console.log)
+    .catch(err => console.log(err.stack));
+}
+
 tests.defaultArticleParser = function() {
   Promise.resolve("https://www.washingtonpost.com/news/worldviews/wp/2016/10/24/britains-first-white-lives-matter-rally-was-as-much-of-a-joke-as-it-sounds/")
     .then(require("./loader/http.js").load)

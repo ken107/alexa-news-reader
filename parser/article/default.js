@@ -6,6 +6,7 @@ exports.parse = function(html) {
   var tags = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "blockquote"];
 
   //remove unwanted elems
+  $("script").remove();
   $("a > *").remove();
   $(tags.map(tag => tag + " > div").join(", ")).remove();
 

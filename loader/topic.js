@@ -40,6 +40,6 @@ function loadFeed(topicName) {
   if (!url) url = config.feeds.$$.replace("${topic}", encodeURIComponent(topicName));
 
   return Promise.resolve(url)
-    .then(require("../loader/http.js").load)
-    .then(require("../parser/feed/google.js").parse);
+    .then(require("./http.js").load)
+    .then(xml => require("../parser/feed.js").parse(xml, url));
 }

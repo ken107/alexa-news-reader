@@ -3,9 +3,9 @@ var log = require("../util/log.js");
 var cache = require("../cache/combined.js");
 var pending = {};
 
-var parsers = [
-  { matcher: /www\.cnn\.com$/i, parse: require("../parser/article/cnn.js").parse },
-  { matcher: /./, parse: require("../parser/article/default.js").parse }
+var loaders = [
+  { matcher: /\.forbes\.com$/i, load: require("./article/forbes.js").load },
+  { matcher: /./, load: require("./article/default.js").load }
 ];
 
 exports.load = function(url) {
@@ -32,8 +32,6 @@ function load(url) {
 
 function loadFeed(url) {
   var hostname = require("url").parse(url, true).hostname;
-  var parser = parsers.find(parser => parser.matcher.test(hostname));
-  return Promise.resolve(url)
-    .then(require("../loader/http.js").load)
-    .then(parser.parse);
+  var loader = loaders.find(loader => loader.matcher.test(hostname));
+  return loader.load(url);
 }
