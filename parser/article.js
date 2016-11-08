@@ -2,6 +2,7 @@
 var parsers = [
   { matcher: /www\.cnn\.com$/i, parse: require("./article/cnn.js").parse },
   { matcher: /\.forbes\.com$/i, parse: require("./article/forbes.js").parse },
+  { matcher: /\.usnews\.com$/i, parse: require("./article/usnews.js").parse },
   { matcher: /./, parse: require("./article/default.js").parse }
 ];
 

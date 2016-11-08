@@ -54,7 +54,7 @@ tests.topicLoader = function() {
 }
 
 tests.articleLoader = function() {
-  Promise.resolve("http://nypost.com/2016/10/25/woman-who-pushed-husband-out-of-high-rise-window-found-dead-in-prison/")
+  Promise.resolve("http://www.usnews.com/news/national-news/articles/2016-11-08/tim-kaine-joe-biden-rally-for-hillary-clinton-in-virginia")
     .then(require("./loader/article.js").load)
     .then(console.log)
     .catch(err => console.log(err.stack));
@@ -116,7 +116,7 @@ tests.continueListing = function() {
 }
 
 tests.readArticle = function() {
-  return Promise.resolve([{topicName: "Technology", articleIndex: 1}, ses = {topicName: "Top Stories"}])
+  return Promise.resolve([{topicName: "Technology", articleIndex: 2}, ses = {topicName: "Top Stories"}])
     .then(helper.spread(require("./intent/read_article.js").handle))
     .then(console.log)
     .catch(err => console.log(err.stack));
