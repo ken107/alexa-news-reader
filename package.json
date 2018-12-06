@@ -4,7 +4,7 @@
   "description": "An alexa skill that reads the news to you",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "package": "zip -u -r build/Release/package.zip * || true"
   },
   "repository": {
     "type": "git",
@@ -26,9 +26,11 @@
   },
   "homepage": "https://github.com/ken107/alexa-news-reader#readme",
   "dependencies": {
-    "cheerio": "^0.22.0",
+    "axios": "^0.18.0",
     "extend": "^3.0.0",
     "loglevel": "^1.4.1",
-    "request": "^2.75.0"
+    "ms": "^2.1.1",
+    "multilayer-async-cache-builder": "^1.0.4",
+    "simple-cache": "git+ssh://git@github.com/ken107/simple-cache.git"
   }
 }

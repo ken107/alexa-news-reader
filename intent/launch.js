@@ -6,7 +6,7 @@ exports.handle = function(req, ses) {
 
   ses.yesIntent = "PickTopic";
   return {
-    text: "Which topic would you like to read?",
+    text: "Which topic would you like to read?  To hear the list of topics, say 'list topics'.",
     title: "Welcome",
     reprompt: "To hear the list of topics, say 'list topics'."
   };

@@ -1,16 +1,22 @@
-
 var config = require("../util/config.js");
 var log = require("../util/log.js");
+const { getSource } = require("../loader/source");
+const { getTopicIndex } = require("../util/helper");
+const { getTopic } = require("../loader/topic");
 
-exports.handle = function(req, ses) {
+
+exports.handle = async function(req, ses) {
   log.debug("ContinueListing");
-
   if (!ses.topicName) throw new Error("NO_TOPIC");
 
-  return Promise.resolve(ses.topicName)
-    .then(require("../loader/topic.js").load)
-    .then(topic => listNext(topic, ses));
+  const source = await getSource(config.sourceIndex);
+  const topicIndex = getTopicIndex(source, ses.topicName);
+  if (topicIndex == -1) throw new Error("BAD_TOPIC");
+
+  const topic = await getTopic(config.sourceIndex, topicIndex);
+  return listNext(topic, ses);
 }
+
 
 function listNext(topic, ses) {
   var start = ses.toList;
