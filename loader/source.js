@@ -15,6 +15,7 @@ async function loadSource(sourceIndex) {
       sourceIndex
     }
   })
+  res.data.topics.forEach(topic => topic.name = config.topicMapping[topic.name] || topic.name);
   return res.data;
 }
 

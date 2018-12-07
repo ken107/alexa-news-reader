@@ -11,6 +11,7 @@ async function getTopic(sourceIndex, topicIndex) {
       topicIndex
     }
   })
+  res.data.name = config.topicMapping[res.data.name] || res.data.name;
   return res.data;
 }
 
