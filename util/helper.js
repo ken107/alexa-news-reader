@@ -7,5 +7,7 @@ exports.spread = function(f, self) {
 };
 
 exports.getTopicIndex = function(source, topicName) {
-  return source.topics.findIndex(x => x.name.toLowerCase() == config.topicMapping[topicName] || topicName);
+  topicName = topicName.toLowerCase();
+  topicName = config.topicMapping[topicName] || topicName;
+  return source.topics.findIndex(x => x.name.toLowerCase() == topicName);
 }

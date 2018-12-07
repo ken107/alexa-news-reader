@@ -69,7 +69,7 @@ tests.continueListing = function() {
 }
 
 tests.readArticle = function() {
-  return Promise.resolve([{topicName: "Technology", articleIndex: 2}, ses = {topicName: "Top Stories"}])
+  return Promise.resolve([{topicName: "Science", articleIndex: 2}, ses = {topicName: "Top Stories"}])
     .then(helper.spread(require("./intent/read_article.js").handle))
     .then(console.log)
     .catch(console.error)
@@ -83,14 +83,14 @@ tests.continueReading = function() {
 }
 
 tests.listRelatedArticles = function() {
-  return Promise.resolve([{}, ses = {topicName: "Technology", articleIndex: 0}])
+  return Promise.resolve([{}, ses = {topicName: "Science", articleIndex: 2}])
     .then(helper.spread(require("./intent/list_related_articles.js").handle))
     .then(console.log)
     .catch(console.error)
 }
 
 tests.readRelatedArticle = function() {
-  return Promise.resolve([{articleIndex: 1}, ses = {topicName: "Technology", articleIndex: 0}])
+  return Promise.resolve([{articleIndex: 1}, ses = {topicName: "Science", articleIndex: 2}])
     .then(helper.spread(require("./intent/read_related_article.js").handle))
     .then(console.log)
     .catch(console.error)
@@ -99,13 +99,6 @@ tests.readRelatedArticle = function() {
 tests.continueReadingRelated = function() {
   return tests.readRelatedArticle()
     .then(() => require("./intent/continue_reading_related.js").handle(null, ses))
-    .then(console.log)
-    .catch(console.error)
-}
-
-tests.nextRelatedArticle = function() {
-  return Promise.resolve([{}, ses = {topicName: "Technology", articleIndex: 0, relatedIndex: 1}])
-    .then(helper.spread(require("./intent/next_related_article.js").handle))
     .then(console.log)
     .catch(console.error)
 }
