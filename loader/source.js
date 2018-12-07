@@ -2,6 +2,7 @@ const axios = require("axios");
 const ms = require("ms");
 const { Fetch } = require("multilayer-async-cache-builder");
 const { MemCache } = require("simple-cache");
+const config = require("../util/config");
 
 const getSource = new Fetch(loadSource).cache(new MemCache(ms("1h"), ms("1h"))).dedupe();
 

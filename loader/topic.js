@@ -1,4 +1,5 @@
 const axios = require("axios");
+const config = require("../util/config");
 
 async function getTopic(sourceIndex, topicIndex) {
   const res = await axios({

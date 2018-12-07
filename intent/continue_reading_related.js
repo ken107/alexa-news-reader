@@ -1,5 +1,5 @@
 var log = require("../util/log.js");
-const config = require("../config.json");
+const config = require("../util/config");
 const { getSource } = require("../loader/source");
 const { getTopicIndex } = require("../util/helper");
 const { getTopic } = require("../loader/topic");

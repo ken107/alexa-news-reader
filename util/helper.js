@@ -1,4 +1,4 @@
-const config = require("../config.json");
+const config = require("../util/config");
 
 exports.spread = function(f, self) {
   return function(args) {

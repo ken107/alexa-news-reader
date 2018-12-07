@@ -1,6 +1,7 @@
 const axios = require("axios");
+const config = require("../util/config");
 
-function getArticle(sourceIndex, topicIndex, articleIndex) {
+async function getArticle(sourceIndex, topicIndex, articleIndex) {
   const res = await axios({
     method: "POST",
     url: config.serviceUrl,
