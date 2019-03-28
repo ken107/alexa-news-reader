@@ -1,6 +1,6 @@
 {
   "common": {
-    "serviceUrl": "https://support.lsdsoftware.com:30299/news-scraper",
+    "serviceUrl": "https://service.lsdsoftware.com/news-scraper",
     "sourceIndex": 0,
     "topicMapping": {
       "Headlines": "Top Stories",
