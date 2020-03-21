@@ -16,6 +16,11 @@ var handlers = {
   ReadRelatedArticle: require("./intent/read_related_article.js"),
   "AMAZON.StopIntent": require("./intent/stop.js"),
   "AMAZON.CancelIntent": require("./intent/stop.js"),
+  "AMAZON.NextIntent": require("./intent/next"),
+  "AMAZON.PreviousIntent": require("./intent/previous"),
+  "AMAZON.RepeatIntent": require("./intent/repeat"),
+  "AMAZON.SelectIntent": require("./intent/read_article"),
+  "AMAZON.StartOverIntent": require("./intent/launch"),
   "AMAZON.HelpIntent": require("./intent/help.js"),
   "AMAZON.YesIntent": require("./intent/yes.js")
 };
@@ -50,6 +55,7 @@ function handle(request, session) {
     })
     .then(res => {
       log.debug(res);
+      ses.lastResponse = res;
       return wrapResponse(res, ses);
     });
 }
@@ -69,6 +75,9 @@ function unwrapRequest(request) {
         req.articleIndex = config.positions.indexOf(slot.value);
         if (req.articleIndex == -1) req.articleIndex = config.positions2.indexOf(slot.value);
       }
+    }
+    else if (name == "ListPosition" && slot.value != null) {
+      req.articleIndex = slot.value -1;
     }
   }
   return req;

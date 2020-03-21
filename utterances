@@ -37,3 +37,8 @@ ReadRelatedArticle read the {position} related article
 
 AMAZON.YesIntent continue
 AMAZON.HelpIntent help
+AMAZON.NextIntent next
+AMAZON.PreviousIntent previous
+AMAZON.RepeatIntent repeat
+AMAZON.SelectIntent select
+AMAZON.StartOverIntent startOver
